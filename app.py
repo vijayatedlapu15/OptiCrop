@@ -8,21 +8,34 @@ from flask import Flask, render_template, request, jsonify, send_file
 app = Flask(__name__)
 
 # Paths
-MODEL_PATH = "crop_recommendation_model.pkl"
-STATS_PATH = "crop_stats.json"
-DATA_PATH = "Crop_recommendation.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "crop_recommendation_model.pkl")
+STATS_PATH = os.path.join(BASE_DIR, "crop_stats.json")
+DATA_PATH = os.path.join(BASE_DIR, "Crop_recommendation.csv")
 
 # Global variables for model and stats
 model = None
 crop_stats = None
 
+
 def load_resources():
     global model, crop_stats
+    print(f"Loading resources from: {MODEL_PATH} and {STATS_PATH}")
     if os.path.exists(MODEL_PATH):
         model = joblib.load(MODEL_PATH)
+        print("Model loaded successfully.")
+    else:
+        print("Model file NOT found!")
     if os.path.exists(STATS_PATH):
         with open(STATS_PATH, 'r') as f:
             crop_stats = json.load(f)
+        print("Crop stats loaded successfully.")
+    else:
+        print("Crop stats file NOT found!")
+
+# Call load_resources immediately on import (for serverless environments like Vercel)
+load_resources()
+
 
 # Helper: calculate compatibility score and get recommendations
 def calculate_suitability(crop_name, n, p, k, temp, hum, ph, rain):
