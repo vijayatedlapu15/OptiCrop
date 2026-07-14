@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-title-section animate-fade-in">
+    <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Scenario 1: Smart Crop Recommendation</h2>
+    <p>Enter the chemical characteristics of the soil along with local weather conditions to receive the most optimal crop recommendation using machine learning models.</p>
+</div>
+
+<div class="interactive-grid animate-slide-up">
+    <!-- Form Panel -->
+    <div class="form-panel glass-card">
+        <div class="card-header">
+            <h3>Soil & Environmental Parameters</h3>
+            <span class="badge">Prediction Engine v1.0</span>
+        </div>
+        
+        <form id="recommend-form" class="crop-form">
+            <!-- Soil Nutrients Row -->
+            <h4 class="form-subheader"><i class="fa-solid fa-flask"></i> Soil Macronutrients (mg/kg)</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="input-n">Nitrogen (N) <span class="label-info">Typical: 0 - 140</span></label>
+                    <input type="number" id="input-n" name="N" min="0" max="150" step="1" placeholder="e.g. 80" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-n" min="0" max="150" value="70">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-p">Phosphorous (P) <span class="label-info">Typical: 5 - 145</span></label>
+                    <input type="number" id="input-p" name="P" min="5" max="150" step="1" placeholder="e.g. 45" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-p" min="5" max="150" value="45">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-k">Potassium (K) <span class="label-info">Typical: 5 - 205</span></label>
+                    <input type="number" id="input-k" name="K" min="5" max="210" step="1" placeholder="e.g. 50" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-k" min="5" max="210" value="45">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Climate and pH Row -->
+            <h4 class="form-subheader"><i class="fa-solid fa-cloud-sun"></i> Climatic Conditions</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="input-temp">Temperature (°C) <span class="label-info">Typical: 10 - 50</span></label>
+                    <input type="number" id="input-temp" name="temperature" min="5" max="50" step="0.1" placeholder="e.g. 24.5" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-temp" min="5" max="50" step="0.5" value="25">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-hum">Humidity (%) <span class="label-info">Typical: 10 - 100</span></label>
+                    <input type="number" id="input-hum" name="humidity" min="10" max="100" step="0.1" placeholder="e.g. 80" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-hum" min="10" max="100" value="80">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="input-ph">Soil pH <span class="label-info">Typical: 3.5 - 10</span></label>
+                    <input type="number" id="input-ph" name="ph" min="3.5" max="10" step="0.1" placeholder="e.g. 6.5" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-ph" min="3.5" max="10" step="0.1" value="6.5">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-rain">Rainfall (mm) <span class="label-info">Typical: 20 - 300</span></label>
+                    <input type="number" id="input-rain" name="rainfall" min="10" max="350" step="0.1" placeholder="e.g. 150" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-rain" min="10" max="350" value="150">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Fill Presets -->
+            <div class="preset-section">
+                <span>Quick Presets:</span>
+                <button type="button" class="preset-btn" data-n="90" data-p="42" data-k="43" data-temp="20.87" data-hum="82.00" data-ph="6.50" data-rain="202.91">Wetland/Rice</button>
+                <button type="button" class="preset-btn" data-n="70" data-p="55" data-k="45" data-temp="22.50" data-hum="65.00" data-ph="5.80" data-rain="90.50">Semi-arid/Maize</button>
+                <button type="button" class="preset-btn" data-n="25" data-p="130" data-k="200" data-temp="18.20" data-hum="15.50" data-ph="7.20" data-rain="80.20">Dry/Chickpea</button>
+                <button type="button" class="preset-btn" data-n="105" data-p="15" data-k="30" data-temp="26.30" data-hum="80.10" data-ph="6.80" data-rain="140.00">Tropical/Coffee</button>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="btn-submit-recommend">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> Generate Crop Recommendation
+            </button>
+        </form>
+    </div>
+
+    <!-- Result Panel -->
+    <div class="result-panel glass-card" id="recommend-result-card" style="display: none;">
+        <div class="card-header">
+            <h3>Recommendation Result</h3>
+            <button class="action-btn-small" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+        </div>
+        
+        <div class="result-box text-center">
+            <div class="recommended-crop-label">Recommended Crop</div>
+            <div class="crop-icon-wrapper pulse-animation">
+                <i class="fa-solid fa-seedling crop-symbol-icon"></i>
+            </div>
+            <div class="crop-result-name" id="crop-recommendation-name">Rice</div>
+            
+            <div class="confidence-container">
+                <div class="bar-label">
+                    <span>Model Confidence</span>
+                    <span id="crop-confidence-val">98.5%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="crop-confidence-fill" style="width: 98.5%;"></div>
+                </div>
+            </div>
+            
+            <div class="confidence-container">
+                <div class="bar-label">
+                    <span>Soil Suitability Score</span>
+                    <span id="crop-suitability-val">94.2%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill suitability-fill" id="crop-suitability-fill" style="width: 94.2%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="suitability-radar-box">
+            <h4>Macronutrient Alignment</h4>
+            <div class="chart-container-small">
+                <canvas id="recommendRadarChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="result-details">
+            <h4>Soil Alignment Analysis</h4>
+            <div class="details-table-container">
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Input</th>
+                            <th>Optimal Range</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="details-table-body">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Empty State Result Panel -->
+    <div class="result-panel glass-card empty-state" id="recommend-empty-state">
+        <div class="empty-state-content text-center">
+            <i class="fa-solid fa-circle-question empty-icon"></i>
+            <h3>No Output Yet</h3>
+            <p>Fill out the soil composition and environmental details in the left form and press "Generate" to compute recommendation results.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

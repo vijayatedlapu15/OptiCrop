@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-title-section animate-fade-in">
+    <div class="title-with-actions">
+        <div>
+            <h2><i class="fa-solid fa-seedling"></i> Scenario 3: Agricultural Research & Policy Planning Dashboard</h2>
+            <p>Analyze macro-environmental patterns, check variable correlations, examine soil classifications, and export consolidated crop requirements for policy planning.</p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('export_csv') }}" class="btn btn-primary" id="btn-export-csv">
+                <i class="fa-solid fa-file-csv"></i> Export Profiles (CSV)
+            </a>
+            <a href="{{ url_for('api_research_data') }}" target="_blank" class="btn btn-secondary">
+                <i class="fa-solid fa-file-code"></i> Raw Data API (JSON)
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="research-grid animate-slide-up">
+    <!-- Visualizations Card -->
+    <div class="analytics-card glass-card full-width">
+        <div class="card-header">
+            <h3>Crop Property Comparison & Distributions</h3>
+            <div class="chart-selector">
+                <button class="selector-btn active" data-chart="nutrients">Macronutrients (N, P, K)</button>
+                <button class="selector-btn" data-chart="climate">Rainfall & Temp</button>
+                <button class="selector-btn" data-chart="correlation">Correlation Heatmap</button>
+            </div>
+        </div>
+        
+        <div class="chart-container-large">
+            <canvas id="researchLargeChart"></canvas>
+            <div id="heatmap-container" style="display:none; position: relative;">
+                <!-- We will draw correlation heatmap here using Canvas or a table representation -->
+                <div id="heatmap-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Soil Classification & Policy Section -->
+    <div class="policy-card glass-card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-compass"></i> Soil Grouping & Sustainable Rotation Advice</h3>
+            <span class="badge">Policy Guide</span>
+        </div>
+        <p class="policy-intro">To prevent nutrient depletion and support sustainable cultivation, agricultural policies recommend dividing regional soils into clusters and planning rotations. Select a soil type to see recommended crops:</p>
+        
+        <div class="policy-tabs">
+            <button class="policy-tab-btn active" data-tab="drought">Drought-Tolerant (Rainfall < 80mm)</button>
+            <button class="policy-tab-btn" data-tab="wetland">Wetland (Rainfall > 150mm)</button>
+            <button class="policy-tab-btn" data-tab="acidic">Acidic Soil (pH < 6.0)</button>
+            <button class="policy-tab-btn" data-tab="alkaline">Alkaline Soil (pH > 7.0)</button>
+        </div>
+        
+        <div class="policy-tab-content">
+            <div class="tab-pane active" id="pane-drought">
+                <h5>Drought-Resilient Rotation Program</h5>
+                <p>These crops survive in areas with limited water availability. Recommended rotation sequence: Legumes (mothbeans, mungbean) -> Grains (millets) -> Oilseeds to maintain soil structure and nitrogen.</p>
+                <div class="crop-tags" id="tags-drought">
+                    <!-- filled by JS -->
+                </div>
+                <div class="policy-note">
+                    <strong>Policy Action:</strong> Introduce subsidy structures for micro-irrigation systems (drip/sprinkler) in these crop zones to conserve aquifer reserves by 40%.
+                </div>
+            </div>
+            
+            <div class="tab-pane" id="pane-wetland" style="display:none;">
+                <h5>Wetland Crop Management</h5>
+                <p>Crops requiring high humidity and persistent moisture. Rotation with deep-rooting cover crops during dry periods helps control soil erosion and maintains sub-surface drainage channels.</p>
+                <div class="crop-tags" id="tags-wetland">
+                    <!-- filled by JS -->
+                </div>
+                <div class="policy-note">
+                    <strong>Policy Action:</strong> Support laser land-leveling and bund building programs. Direct efforts to build local drainage structures to avoid runoffs and flooding.
+                </div>
+            </div>
+            
+            <div class="tab-pane" id="pane-acidic" style="display:none;">
+                <h5>Acidic Tolerant Cultivation</h5>
+                <p>These crops thrive in soils with lower pH. If pH falls below 5.0, add agricultural lime (dolomite) to unlock key macronutrients like phosphorus which get locked in acidic environments.</p>
+                <div class="crop-tags" id="tags-acidic">
+                    <!-- filled by JS -->
+                </div>
+                <div class="policy-note">
+                    <strong>Policy Action:</strong> Set up community soil-testing centers and establish agricultural lime distribution centers at subsidised rates.
+                </div>
+            </div>
+            
+            <div class="tab-pane" id="pane-alkaline" style="display:none;">
+                <h5>Alkaline Tolerant Cultivation</h5>
+                <p>Crops suited for saline or high pH coastal/inland soils. Regular addition of gypsum (calcium sulfate) or elemental sulfur helps reduce pH and improves water infiltration rates.</p>
+                <div class="crop-tags" id="tags-alkaline">
+                    <!-- filled by JS -->
+                </div>
+                <div class="policy-note">
+                    <strong>Policy Action:</strong> Focus on gypsum distribution schemes and build sub-surface drainage systems to flush out salts during rain cycles.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Research Stats / Insights summary -->
+    <div class="insights-card glass-card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-lightbulb"></i> Crop-Climate Key Research Insights</h3>
+        </div>
+        <div class="insight-list">
+            <div class="insight-item">
+                <div class="insight-bullet N-bg">N</div>
+                <div class="insight-text">
+                    <strong>Nitrogen Dependency:</strong> Cotton, coffee, maize, and banana are high-nitrogen consumers (mean N > 80 mg/kg), whereas legumes (lentil, chickpea) fix their own nitrogen and require < 30 mg/kg.
+                </div>
+            </div>
+            <div class="insight-item">
+                <div class="insight-bullet P-bg">P</div>
+                <div class="insight-text">
+                    <strong>Phosphorus Spikes:</strong> Apple and grapes exhibit highly specialized soil phosphorus requirements (mean P > 120 mg/kg). Regular crops require only 40-60 mg/kg.
+                </div>
+            </div>
+            <div class="insight-item">
+                <div class="insight-bullet K-bg">K</div>
+                <div class="insight-text">
+                    <strong>Potassium Outliers:</strong> Similar to phosphorus, grapes and apple require extreme soil potassium levels (mean K > 200 mg/kg). Standard crop averages sit around 20-40 mg/kg.
+                </div>
+            </div>
+            <div class="insight-item">
+                <div class="insight-bullet rain-bg">R</div>
+                <div class="insight-text">
+                    <strong>Rainfall Constraints:</strong> Rice and coconut are water-intensive (mean Rainfall > 180mm). Muskmelon and chickpea are dryland crops showing extreme high water vulnerability if over-irrigated.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
