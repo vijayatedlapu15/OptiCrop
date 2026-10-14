@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-title-section animate-fade-in">
+    <div class="title-with-actions">
+        <div>
+            <h2><i class="fa-solid fa-leaf"></i> Scenario 4: AI Plant Disease Detection</h2>
+            <p>Diagnose foliar plant pathologies using computer-vision deep learning. Upload a close-up image of a crop leaf to receive real-time disease identification, symptoms breakdown, and agronomic management guidance.</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-secondary" id="btn-open-catalog">
+                <i class="fa-solid fa-list-check"></i> Supported Classes (38)
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="interactive-grid animate-slide-up">
+    <!-- Upload Panel -->
+    <div class="form-panel glass-card">
+        <div class="card-header">
+            <h3>Leaf Image Upload</h3>
+            <span class="badge">MobileNetV2 Vision Engine</span>
+        </div>
+
+        <!-- Drag and Drop Dropzone -->
+        <div class="upload-dropzone" id="disease-dropzone">
+            <input type="file" id="disease-file-input" name="image" accept=".jpg,.jpeg,.png,.webp" style="display: none;">
+            <div class="dropzone-content" id="dropzone-prompt">
+                <div class="upload-icon-circle">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h4>Drag and drop leaf photo here</h4>
+                <p>or <span class="browse-link" id="browse-files-btn">browse your computer</span></p>
+                <span class="dropzone-hint">Supports JPG, JPEG, PNG (Max 10 MB)</span>
+            </div>
+        </div>
+
+        <!-- Image Preview Area -->
+        <div class="preview-container" id="disease-preview-container" style="display: none;">
+            <div class="preview-card">
+                <div class="preview-image-box">
+                    <img id="disease-preview-img" src="" alt="Selected leaf preview">
+                </div>
+                <div class="preview-meta">
+                    <h4 id="preview-filename">filename.jpg</h4>
+                    <p class="text-muted" id="preview-filesize">Size</p>
+                    <div class="preview-actions" style="margin-top: 14px;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="remove-image-btn">
+                            <i class="fa-solid fa-xmark"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="supported-crops-hint">
+                <span class="hint-label">Trained Crop Coverage:</span>
+                <div class="crop-coverage-tags">
+                    <span class="mini-tag">Tomato</span>
+                    <span class="mini-tag">Potato</span>
+                    <span class="mini-tag">Corn (Maize)</span>
+                    <span class="mini-tag">Apple</span>
+                    <span class="mini-tag">Grape</span>
+                    <span class="mini-tag">Bell Pepper</span>
+                    <span class="mini-tag">Peach</span>
+                    <span class="mini-tag">Strawberry</span>
+                    <span class="mini-tag">Cherry</span>
+                    <span class="mini-tag">Orange</span>
+                    <span class="mini-tag">Soybean</span>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="button" class="submit-btn" id="btn-analyze-disease">
+                <i class="fa-solid fa-microscope"></i> Detect Plant Disease
+            </button>
+        </div>
+
+        <!-- Before image: crop coverage hint + CTA -->
+        <div id="disease-pre-upload-info" class="supported-crops-hint" style="margin-top: 18px;">
+            <span class="hint-label">Trained Crop Coverage:</span>
+            <div class="crop-coverage-tags">
+                <span class="mini-tag">Tomato</span>
+                <span class="mini-tag">Potato</span>
+                <span class="mini-tag">Corn (Maize)</span>
+                <span class="mini-tag">Apple</span>
+                <span class="mini-tag">Grape</span>
+                <span class="mini-tag">Bell Pepper</span>
+                <span class="mini-tag">Peach</span>
+                <span class="mini-tag">Strawberry</span>
+                <span class="mini-tag">Cherry</span>
+                <span class="mini-tag">Orange</span>
+                <span class="mini-tag">Soybean</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostic Results / Empty State Panel -->
+    <div class="result-panel glass-card empty-state" id="disease-empty-state">
+        <div class="empty-state-content text-center">
+            <i class="fa-solid fa-camera empty-icon"></i>
+            <h3>Awaiting Leaf Image</h3>
+            <p>Select or drag-and-drop a clear image of a plant leaf on the left. The MobileNetV2 neural network will evaluate foliar pathology patterns.</p>
+            <ul class="model-specs-list" style="text-align:left;margin-top:20px;list-style:none;padding:0;">
+                <li><i class="fa-solid fa-microchip text-primary"></i> Architecture: MobileNetV2 (Transfer Learning)</li>
+                <li><i class="fa-solid fa-database text-primary"></i> Dataset: PlantVillage Benchmark</li>
+                <li><i class="fa-solid fa-layer-group text-primary"></i> Classes: 38 Pathology &amp; Healthy Labels</li>
+                <li><i class="fa-solid fa-shield-halved text-primary"></i> OOD Guardrail: Active (&lt;60% warning)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Results card (populated by JS) -->
+    <div class="result-panel glass-card" id="disease-results-card" style="display: none;">
+        <div class="card-header">
+            <h3>Diagnostic Report</h3>
+            <button class="action-btn-small" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+        </div>
+
+        <div class="disease-result-box text-center">
+            <div class="diagnosis-badge-container">
+                <span class="severity-badge" id="disease-severity-badge">—</span>
+            </div>
+            <h3 class="diag-crop-name" id="disease-result-crop">—</h3>
+            <h2 class="diag-condition-name" id="disease-result-condition">—</h2>
+
+            <!-- Confidence Meter -->
+            <div class="confidence-container" style="margin-top: 15px;">
+                <div class="bar-label">
+                    <span>Model Diagnostic Confidence</span>
+                    <span id="disease-result-confidence">—</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="disease-confidence-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Confidence / Caution Warning -->
+        <div class="caution-alert-box" id="disease-caution-box" style="display: none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <p id="disease-caution-text">Model confidence is below threshold.</p>
+        </div>
+
+        <!-- Symptoms & Care Guidance -->
+        <div class="guidance-section">
+            <div class="guidance-card">
+                <h4><i class="fa-solid fa-magnifying-glass"></i> Observed Foliar Symptoms</h4>
+                <p id="disease-symptoms" class="guidance-text">—</p>
+            </div>
+
+            <div class="guidance-card">
+                <h4><i class="fa-solid fa-hand-holding-medical"></i> Actionable Care &amp; Field Management</h4>
+                <ul id="disease-care-list" class="care-list actionable-care-list">
+                    <!-- Filled dynamically -->
+                </ul>
+            </div>
+
+            <div class="guidance-card">
+                <h4><i class="fa-solid fa-shield-virus"></i> Preventive Sanitation Guidelines</h4>
+                <p id="disease-prevention" class="guidance-text">—</p>
+            </div>
+
+            <!-- Alternate Candidates -->
+            <div class="guidance-card candidates-card">
+                <h4><i class="fa-solid fa-chart-pie"></i> Alternate Diagnostic Hypotheses</h4>
+                <div id="top-candidates-container">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary full-width-btn" id="btn-test-another" style="margin-top: 10px;" onclick="location.reload()">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Test Another Leaf Image
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Supported Classes Catalog -->
+<div class="modal-overlay" id="disease-catalog-modal" style="display: none;">
+    <div class="modal-window">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-book-medical"></i> Benchmark Plant Pathology Classes (38)</h3>
+            <button class="btn-close-modal" id="btn-close-catalog"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-intro" style="margin-bottom:16px;color:var(--text-muted);font-size:13px;">
+                OptiCrop's computer vision system is evaluated against the peer-reviewed PlantVillage dataset across 38 distinct crop-pathology pairs:
+            </p>
+            <div class="catalog-grid" id="catalog-grid">
+                <!-- Filled dynamically by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -233,7 +233,7 @@ body {
 .theme-badge {
     background-color: rgba(46, 204, 113, 0.1);
     color: var(--primary);
-    border: 1px solid rgba(46, 204, 113, 0.2);
+    border: 1px solid rgba(46, 204, 113, 0.25);
     padding: 6px 14px;
     border-radius: 50px;
     font-size: 13px;
@@ -241,24 +241,19 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    transition: all 0.3s ease;
 }
 
-.profile-notification {
-    position: relative;
-    cursor: pointer;
-    font-size: 18px;
-    color: var(--text-muted);
+.theme-badge.offline {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+    border-color: rgba(231, 76, 60, 0.25);
 }
 
-.notification-badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 8px;
-    height: 8px;
-    background-color: var(--danger);
-    border-radius: 50%;
+.theme-badge i {
+    font-size: 11px;
 }
+
 
 .content-body {
     flex-grow: 1;
@@ -635,7 +630,7 @@ body {
 
 /* Inputs & Forms */
 .crop-form input[type="number"], .crop-form select {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: #121e16;
     border: 1px solid var(--panel-border);
     border-radius: 10px;
     padding: 12px 14px;
@@ -647,10 +642,30 @@ body {
     width: 100%;
 }
 
+.crop-form select {
+    background-color: #121e16;
+    color: #f5f6fa;
+    cursor: pointer;
+}
+
+.crop-form select option {
+    background-color: #0e1813;
+    color: #f5f6fa;
+    padding: 10px 14px;
+    font-size: 14px;
+}
+
+.crop-form select option:hover,
+.crop-form select option:focus,
+.crop-form select option:checked {
+    background-color: #1b3826;
+    color: var(--primary);
+}
+
 .crop-form input[type="number"]:focus, .crop-form select:focus {
     border-color: var(--primary);
-    background-color: rgba(46, 204, 113, 0.02);
-    box-shadow: 0 0 10px rgba(46, 204, 113, 0.15);
+    background-color: #15241b;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
 }
 
 .select-group {
@@ -1311,4 +1326,872 @@ body {
         margin-left: 80px;
         padding: 0 20px 20px 20px;
     }
+}
+
+/* ==========================================================================
+   ML ENGINE HEALTH BADGE STATES
+   ========================================================================== */
+.engine-online {
+    background: rgba(46, 204, 113, 0.12) !important;
+    border-color: rgba(46, 204, 113, 0.3) !important;
+    color: #2ecc71 !important;
+}
+.engine-degraded {
+    background: rgba(241, 196, 15, 0.12) !important;
+    border-color: rgba(241, 196, 15, 0.3) !important;
+    color: #f1c40f !important;
+}
+.engine-offline {
+    background: rgba(231, 76, 60, 0.12) !important;
+    border-color: rgba(231, 76, 60, 0.3) !important;
+    color: #e74c3c !important;
+}
+.engine-indicator-online {
+    background-color: #2ecc71 !important;
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.8) !important;
+}
+.engine-indicator-offline {
+    background-color: #e74c3c !important;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.8) !important;
+}
+
+/* ==========================================================================
+   EVALUATION METRICS CARDS & FEATURE IMPORTANCE
+   ========================================================================== */
+.eval-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+/* ==========================================================================
+   CROP COMPARISON MODULE
+   ========================================================================== */
+.comparison-card {
+    margin-top: 25px;
+}
+.comparison-selectors {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    margin-top: 15px;
+}
+@media (max-width: 768px) {
+    .comparison-selectors {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+.comparison-select-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.comparison-select-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-main);
+}
+.styled-select {
+    width: 100%;
+    background-color: #0e1813;
+    border: 1px solid var(--panel-border);
+    color: var(--text-main);
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color var(--transition);
+}
+.styled-select:focus {
+    border-color: var(--primary);
+}
+.styled-select option {
+    background-color: #0e1813;
+    color: #f5f6fa;
+}
+.vs-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--text-muted);
+    align-self: center;
+}
+.comparison-results-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 25px;
+    align-items: start;
+}
+@media (max-width: 992px) {
+    .comparison-results-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.comparison-table-wrapper {
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    padding: 8px;
+}
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.comparison-table th {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--panel-border);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+.comparison-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.unit-pill {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.crop-a-val {
+    color: var(--primary);
+    font-weight: 600;
+}
+.crop-b-val {
+    color: #3498db;
+    font-weight: 600;
+}
+.diff-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+.diff-normal {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+}
+.diff-high {
+    background: rgba(241, 196, 15, 0.15);
+    color: #f1c40f;
+    border: 1px solid rgba(241, 196, 15, 0.3);
+}
+.comparison-chart-wrapper {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+}
+.comparison-chart-wrapper h4 {
+    margin-bottom: 15px;
+    font-size: 15px;
+    font-weight: 600;
+}
+.chart-container-medium {
+    position: relative;
+    height: 320px;
+}
+.comparison-disclaimer {
+    margin-top: 20px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 3px solid var(--primary);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   PLANT DISEASE DETECTION UI
+   ========================================================================== */
+.disease-dropzone {
+    border: 2px dashed rgba(46, 204, 113, 0.3);
+    border-radius: var(--radius-md);
+    padding: 45px 25px;
+    text-align: center;
+    background: rgba(46, 204, 113, 0.02);
+    transition: all var(--transition);
+    cursor: pointer;
+}
+.disease-dropzone:hover, .disease-dropzone.dragover {
+    border-color: var(--primary);
+    background: rgba(46, 204, 113, 0.08);
+    transform: translateY(-2px);
+}
+.dropzone-icon {
+    font-size: 42px;
+    color: var(--primary);
+    margin-bottom: 15px;
+}
+.dropzone-text {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.dropzone-subtext {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+}
+.preview-container {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+}
+.preview-card {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+@media (max-width: 576px) {
+    .preview-card {
+        flex-direction: column;
+    }
+}
+.preview-image-box {
+    width: 140px;
+    height: 140px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--panel-border);
+    background: #000;
+    flex-shrink: 0;
+}
+.preview-image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.preview-meta {
+    flex: 1;
+}
+.preview-meta h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    word-break: break-all;
+}
+.preview-actions {
+    display: flex;
+    gap: 12px;
+}
+.diagnosis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--panel-border);
+}
+.severity-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.severity-none {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+.severity-moderate {
+    background: rgba(241, 196, 15, 0.15);
+    color: #f1c40f;
+    border: 1px solid rgba(241, 196, 15, 0.3);
+}
+.severity-high, .severity-severe {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+.caution-alert-box {
+    background: rgba(241, 196, 15, 0.08);
+    border: 1px solid rgba(241, 196, 15, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.caution-alert-box i {
+    color: #f1c40f;
+    font-size: 18px;
+    margin-top: 2px;
+}
+.caution-alert-box p {
+    font-size: 13px;
+    color: #f1c40f;
+    line-height: 1.5;
+    margin: 0;
+}
+.actionable-care-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.actionable-care-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.candidate-row {
+    margin-bottom: 12px;
+}
+.candidate-info {
+    font-size: 12px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+.candidate-bar-wrapper {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    height: 18px;
+    border-radius: 9px;
+    overflow: hidden;
+}
+.candidate-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), #3498db);
+    border-radius: 9px;
+    transition: width 0.6s ease;
+}
+.candidate-pct {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* ==========================================================================
+   38-CLASS TAXONOMY MODAL
+   ========================================================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.modal-window {
+    background: #0f1612;
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+}
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+.btn-close-modal {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    transition: color var(--transition);
+}
+.btn-close-modal:hover {
+    color: #fff;
+}
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+}
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+.catalog-crop-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+}
+.catalog-crop-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #f5f6fa;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 6px;
+}
+.catalog-crop-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+}
+.catalog-crop-card li {
+    padding: 4px 0;
+    color: var(--text-muted);
+}
+.text-healthy {
+    color: #2ecc71;
+}
+.text-pathogen {
+    color: #e74c3c;
+}
+
+/* ==========================================================================
+   SOIL NOTES, METHODOLOGY EXPLAINER & WEATHER AUTOFILL
+   ========================================================================== */
+.soil-parameter-notes {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border-left: 2px solid var(--primary);
+}
+.param-tip strong {
+    color: var(--text-main);
+}
+.climate-subheader-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+.weather-autofill-btn {
+    background: transparent;
+    border: 1px dashed rgba(46, 204, 113, 0.4);
+    color: var(--primary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition);
+}
+.weather-autofill-btn:hover {
+    background: rgba(46, 204, 113, 0.1);
+    border-color: var(--primary);
+}
+.weather-fetcher-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin: 10px 0 16px 0;
+}
+.weather-box-input-group {
+    display: flex;
+    gap: 10px;
+}
+.styled-input-small {
+    flex: 1;
+    background: #0e1813;
+    border: 1px solid var(--panel-border);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+}
+.styled-input-small:focus {
+    border-color: var(--primary);
+}
+.weather-status-msg {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+.weather-status-info {
+    background: rgba(52, 152, 219, 0.15);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+.weather-status-success {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+.weather-status-warning {
+    background: rgba(241, 196, 15, 0.15);
+    color: #f1c40f;
+    border: 1px solid rgba(241, 196, 15, 0.3);
+}
+.weather-status-error {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+.methodology-card {
+    margin-top: 30px;
+}
+.methodology-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 18px;
+}
+.methodology-step {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+}
+.methodology-step h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.methodology-step p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+}
+.formula-pill {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--primary);
+}
+
+
+/* ============================================
+   Scenario 4: Plant Disease Detection Styles
+   ============================================ */
+
+.upload-dropzone {
+    border: 2px dashed rgba(46, 204, 113, 0.3);
+    border-radius: 16px;
+    padding: 50px 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(46, 204, 113, 0.03);
+    position: relative;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover {
+    border-color: var(--primary);
+    background: rgba(46, 204, 113, 0.08);
+    box-shadow: 0 0 30px rgba(46, 204, 113, 0.1);
+}
+
+.dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.upload-icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+
+.dropzone-content h4 {
+    font-size: 16px;
+    color: var(--text-main);
+    font-weight: 600;
+    margin: 0;
+}
+
+.dropzone-content p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.browse-link {
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.browse-link:hover {
+    color: #27ae60;
+}
+
+.dropzone-hint {
+    font-size: 11px;
+    color: rgba(160, 168, 163, 0.5);
+    margin-top: 4px;
+}
+
+.supported-crops-hint {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+}
+
+.hint-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.crop-coverage-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.mini-tag {
+    display: inline-block;
+    background: rgba(46, 204, 113, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(46, 204, 113, 0.15);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.disease-result-box {
+    padding: 30px 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--panel-border);
+}
+
+.diagnosis-badge-container {
+    margin-bottom: 14px;
+}
+
+.diag-crop-name {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.diag-condition-name {
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+}
+
+.guidance-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 4px;
+}
+
+.guidance-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.guidance-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.guidance-card h4 i {
+    color: var(--primary);
+    font-size: 14px;
+}
+
+.guidance-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.candidates-card {
+    margin-top: 4px;
+}
+
+.model-specs-list {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 2;
+}
+
+.model-specs-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.model-specs-list i {
+    width: 18px;
+    text-align: center;
+}
+
+.full-width-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.modal-intro {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* Severity badge colors */
+.severity-low {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+.severity-moderate {
+    background-color: rgba(241, 196, 15, 0.15);
+    color: #f1c40f;
+    border-color: rgba(241, 196, 15, 0.3);
+}
+
+.severity-high {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border-color: rgba(231, 76, 60, 0.3);
+}
+
+.severity-healthy {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+/* Catalog modal crop cards */
+.catalog-crop-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.catalog-crop-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: var(--text-main);
+}
+
+.catalog-crop-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.catalog-crop-card li {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.text-healthy {
+    color: #2ecc71;
+}
+
+.text-pathogen {
+    color: #e74c3c;
+}
+
+.text-emerald {
+    color: var(--primary);
+}
+
+.text-primary {
+    color: var(--primary);
 }

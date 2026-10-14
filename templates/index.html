@@ -82,10 +82,21 @@
             <div class="scenario-bg-icon"><i class="fa-solid fa-chart-line"></i></div>
             <div class="scenario-header">
                 <i class="fa-solid fa-chart-line icon-3"></i>
-                <h3>Scenario 3: Research & Policy Dashboard</h3>
+                <h3>Scenario 3: Research & Model Analytics</h3>
             </div>
-            <p>Identify critical agricultural dependencies, evaluate correlation matrices, inspect crop property profiles, group soils dynamically, and download research-ready datasets.</p>
+            <p>Inspect true Random Forest evaluation metrics (precision, recall, F1, confusion matrix), feature importance rankings, and empirical crop nutrient requirement distributions.</p>
             <a href="{{ url_for('research') }}" class="btn btn-success">View Analytics <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="scenario-card">
+            <div class="scenario-bg-icon"><i class="fa-solid fa-leaf"></i></div>
+            <div class="scenario-header">
+                <i class="fa-solid fa-leaf icon-1"></i>
+                <h3>Scenario 4: AI Plant Disease Detection</h3>
+            </div>
+            <p>Upload field leaf photos (Tomato, Potato, Corn, Apple, Grape, etc.) for instant computer-vision disease diagnosis powered by a MobileNetV2 neural network with actionable care guidance.</p>
+            <a href="{{ url_for('disease_detection') }}" class="btn btn-primary">Detect Disease <i class="fa-solid fa-arrow-right"></i></a>
         </div>
     </div>
 </div>
@@ -94,7 +105,7 @@
 <div class="wisdom-panel animate-slide-up">
     <div class="wisdom-content">
         <h4><i class="fa-solid fa-circle-info"></i> Precision Agriculture Note</h4>
-        <p>By optimizing macronutrients (N, P, K) and aligning crops with matching climate zones, farmers can increase resource efficiency by up to 30%, reduce water runoff, and support regional sustainability. Use the analytics tab to inspect ecological ranges for crop rotations.</p>
+        <p>By balancing soil macronutrients (N, P, K) and matching crops to their historical climate envelopes, farmers can optimize vegetative growth and prevent resource misallocation. Combine recommendation with visual disease monitoring for early crop intervention.</p>
     </div>
 </div>
 {% endblock %}

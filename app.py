@@ -12,18 +12,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "crop_recommendation_model.pkl")
 STATS_PATH = os.path.join(BASE_DIR, "crop_stats.json")
 DATA_PATH = os.path.join(BASE_DIR, "Crop_recommendation.csv")
+EVAL_PATH = os.path.join(BASE_DIR, "evaluation_metrics.json")
 
-# Global variables for model and stats
+# Global variables for models and stats
 model = None
 crop_stats = None
+disease_detector = None
 
 
 def load_resources():
-    global model, crop_stats
+    global model, crop_stats, disease_detector
     print(f"Loading resources from: {MODEL_PATH} and {STATS_PATH}")
     if os.path.exists(MODEL_PATH):
         model = joblib.load(MODEL_PATH)
-        print("Model loaded successfully.")
+        print("Crop recommendation model loaded successfully.")
     else:
         print("Model file NOT found!")
     if os.path.exists(STATS_PATH):
@@ -32,9 +34,16 @@ def load_resources():
         print("Crop stats loaded successfully.")
     else:
         print("Crop stats file NOT found!")
+        
+    try:
+        from disease_model import PlantDiseaseDetector
+        disease_detector = PlantDiseaseDetector.get_instance()
+    except Exception as e:
+        print(f"Disease detector startup notice: {e}")
 
 # Call load_resources immediately on import (for serverless environments like Vercel)
 load_resources()
+
 
 
 # Helper: calculate compatibility score and get recommendations
@@ -166,6 +175,10 @@ def suitability():
 def research():
     return render_template('research.html')
 
+@app.route('/disease-detection')
+def disease_detection():
+    return render_template('disease.html')
+
 # API Endpoints
 @app.route('/api/recommend', methods=['POST'])
 def api_recommend():
@@ -286,6 +299,169 @@ def export_csv():
         return send_file(temp_file, as_attachment=True, download_name="crop_environmental_requirements.csv")
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/health')
+def api_health():
+    is_crop_model_ready = model is not None
+    is_disease_ready = (disease_detector is not None and getattr(disease_detector, 'model', None) is not None)
+    return jsonify({
+        'status': 'online' if is_crop_model_ready else 'degraded',
+        'engine': 'active',
+        'crop_recommendation_model': {
+            'loaded': is_crop_model_ready,
+            'type': 'Random Forest Classifier (multiclass)',
+            'classes_count': len(model.classes_) if is_crop_model_ready else 0,
+            'samples': 2200,
+            'features': ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+        },
+        'plant_disease_model': {
+            'loaded': is_disease_ready,
+            'architecture': 'MobileNetV2 (Transfer Learning / Benchmark Pathology)',
+            'classes_count': 38
+        }
+    })
+
+@app.route('/api/model-evaluation')
+def api_model_evaluation():
+    if os.path.exists(EVAL_PATH):
+        try:
+            with open(EVAL_PATH, 'r') as f:
+                data = json.load(f)
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({'error': f'Failed to load evaluation metrics: {str(e)}'}), 500
+    else:
+        return jsonify({'error': 'Evaluation metrics file not found. Run model_evaluation.py first.'}), 404
+
+@app.route('/api/disease-detection', methods=['POST'])
+def api_disease_detection():
+    global disease_detector
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file uploaded.'}), 400
+    
+    file = request.files['image']
+    if not file or file.filename == '':
+        return jsonify({'error': 'Empty filename or invalid upload.'}), 400
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp']:
+        return jsonify({'error': 'Invalid image format. Supported formats are JPG, PNG, and WebP.'}), 400
+
+    try:
+        image_bytes = file.read()
+        if len(image_bytes) > 10 * 1024 * 1024:
+            return jsonify({'error': 'File size exceeds maximum allowed limit of 10 MB.'}), 400
+            
+        if disease_detector is None:
+            try:
+                from disease_model import PlantDiseaseDetector
+                disease_detector = PlantDiseaseDetector.get_instance()
+            except Exception as e:
+                return jsonify({'error': f'Disease diagnosis engine failed to initialize: {str(e)}'}), 500
+
+        result = disease_detector.predict(image_bytes)
+        if not result.get('success'):
+            return jsonify({'error': result.get('error', 'Prediction failed.')}), 400
+            
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Server error processing diagnosis: {str(e)}'}), 500
+
+@app.route('/api/disease-classes')
+def api_disease_classes():
+    try:
+        from disease_model import get_supported_classes
+        return jsonify({
+            'success': True,
+            'total_classes': 38,
+            'catalog': get_supported_classes()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/compare-crops')
+def api_compare_crops():
+    crop1 = request.args.get('crop1', '').strip().lower()
+    crop2 = request.args.get('crop2', '').strip().lower()
+    
+    if not crop_stats or crop1 not in crop_stats or crop2 not in crop_stats:
+        return jsonify({'error': 'Please provide two valid model-supported crops to compare.'}), 400
+
+    units = {
+        'N': 'kg/ha',
+        'P': 'kg/ha',
+        'K': 'kg/ha',
+        'temperature': '°C',
+        'humidity': '%',
+        'ph': 'pH units',
+        'rainfall': 'mm'
+    }
+    
+    param_names = {
+        'N': 'Nitrogen',
+        'P': 'Phosphorus',
+        'K': 'Potassium',
+        'temperature': 'Temperature',
+        'humidity': 'Relative Humidity',
+        'ph': 'Soil pH',
+        'rainfall': 'Annual Rainfall'
+    }
+
+    comparison = {}
+    c1_stats = crop_stats[crop1]
+    c2_stats = crop_stats[crop2]
+    
+    insights = []
+    
+    for feat in ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']:
+        s1 = c1_stats[feat]
+        s2 = c2_stats[feat]
+        
+        diff = round(s1['mean'] - s2['mean'], 2)
+        pct_diff = round((diff / s2['mean']) * 100, 1) if s2['mean'] != 0 else 0
+        
+        comparison[feat] = {
+            'param_name': param_names[feat],
+            'unit': units[feat],
+            'crop1': {
+                'mean': round(s1['mean'], 2),
+                'min': round(s1['min'], 2),
+                'max': round(s1['max'], 2),
+                'optimal_range': f"{round(s1['p10'], 1)} - {round(s1['p90'], 1)}"
+            },
+            'crop2': {
+                'mean': round(s2['mean'], 2),
+                'min': round(s2['min'], 2),
+                'max': round(s2['max'], 2),
+                'optimal_range': f"{round(s2['p10'], 1)} - {round(s2['p90'], 1)}"
+            },
+            'difference': diff,
+            'percent_diff': pct_diff
+        }
+
+    rain_diff = round(c1_stats['rainfall']['mean'] - c2_stats['rainfall']['mean'], 1)
+    if abs(rain_diff) > 20:
+        higher_crop = crop1.capitalize() if rain_diff > 0 else crop2.capitalize()
+        lower_crop = crop2.capitalize() if rain_diff > 0 else crop1.capitalize()
+        insights.append(f"{higher_crop} demands substantially higher water intake (+{abs(rain_diff)} mm avg) than {lower_crop}, making it more water-intensive.")
+
+    n_diff = round(c1_stats['N']['mean'] - c2_stats['N']['mean'], 1)
+    if abs(n_diff) > 20:
+        higher_crop = crop1.capitalize() if n_diff > 0 else crop2.capitalize()
+        lower_crop = crop2.capitalize() if n_diff > 0 else crop1.capitalize()
+        insights.append(f"{higher_crop} requires heavier nitrogen fertilization (+{abs(n_diff)} kg/ha avg) compared to {lower_crop}.")
+
+    ph1 = c1_stats['ph']['mean']
+    ph2 = c2_stats['ph']['mean']
+    if abs(ph1 - ph2) > 0.5:
+        insights.append(f"Soil acidity requirements diverge: {crop1.capitalize()} centers around pH {round(ph1, 1)}, while {crop2.capitalize()} prefers pH {round(ph2, 1)}.")
+
+    return jsonify({
+        'crop1': crop1.capitalize(),
+        'crop2': crop2.capitalize(),
+        'parameters': comparison,
+        'insights': insights
+    })
 
 if __name__ == '__main__':
     load_resources()

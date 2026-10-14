@@ -37,19 +37,22 @@
                 <a href="{{ url_for('suitability') }}" class="menu-item {% if request.path == '/suitability' %}active{% endif %}" id="nav-suitability">
                     <i class="fa-solid fa-gauge-high menu-icon"></i>
                     <span>Crop Suitability</span>
+                <a href="{{ url_for('disease_detection') }}" class="menu-item {% if request.path == '/disease-detection' %}active{% endif %}" id="nav-disease">
+                    <i class="fa-solid fa-leaf menu-icon"></i>
+                    <span>Plant Disease</span>
                 </a>
                 <a href="{{ url_for('research') }}" class="menu-item {% if request.path == '/research' %}active{% endif %}" id="nav-research">
-                    <i class="fa-solid fa-seedling menu-icon"></i>
+                    <i class="fa-solid fa-chart-column menu-icon"></i>
                     <span>Research Analytics</span>
                 </a>
             </nav>
             
             <div class="sidebar-footer">
                 <div class="user-profile">
-                    <div class="avatar"><i class="fa-solid fa-user-gear"></i></div>
+                    <div class="avatar"><i class="fa-solid fa-microchip"></i></div>
                     <div class="user-info">
-                        <span class="username">Intern - Team Opti</span>
-                        <span class="user-role">SmartBridge Project</span>
+                        <span class="username">OptiCrop AI</span>
+                        <span class="user-role">v2.0 • Precision Ag ML</span>
                     </div>
                 </div>
             </div>
@@ -63,13 +66,9 @@
                     <input type="text" placeholder="Search insights, crops, guidelines..." disabled>
                 </div>
                 <div class="header-actions">
-                    <div class="theme-badge">
-                        <i class="fa-solid fa-circle-nodes"></i>
-                        <span>Engine: Active</span>
-                    </div>
-                    <div class="profile-notification">
-                        <i class="fa-regular fa-bell"></i>
-                        <span class="notification-badge"></span>
+                    <div class="theme-badge" id="engine-status-badge">
+                        <i class="fa-solid fa-circle-nodes" id="engine-status-icon"></i>
+                        <span id="engine-status-text">ML Engine: Online</span>
                     </div>
                 </div>
             </header>
@@ -79,7 +78,7 @@
             </div>
             
             <footer class="footer">
-                <p>&copy; 2026 OptiCrop. Developed for SmartBridge Internship. Team members: V. Lakshmi Geetha (Lead), G. Ajay Kumar, E. Henry Chilakapati, G. Sai Sri Meka, M. Akanksha.</p>
+                <p>&copy; 2026 OptiCrop — Smart Agricultural Production Optimization Engine. Precision Machine Learning for Sustainable Farming.</p>
             </footer>
         </main>
     </div>
