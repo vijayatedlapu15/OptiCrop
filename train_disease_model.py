@@ -23,7 +23,7 @@ EVAL_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "disease_evaluation.json")
 
 # Hyperparameters
 BATCH_SIZE = 32
-NUM_EPOCHS = 10
+NUM_EPOCHS = 5
 LEARNING_RATE = 0.001
 SEED = 42
 VAL_SPLIT = 0.15

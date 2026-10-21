@@ -7,6 +7,8 @@ from PIL import Image
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_WEIGHTS_PATH = os.path.join(BASE_DIR, "plant_disease_mobilenet_v2.pth")
+TRAINED_MODEL_PATH = os.path.join(BASE_DIR, "training_output", "best_model.pth")
+TRAINED_CLASS_MAP = os.path.join(BASE_DIR, "training_output", "class_mapping.json")
 ONNX_MODEL_PATH = os.path.join(BASE_DIR, "plant_disease_model.onnx")
 
 # Benchmark PlantVillage 38 Classes (standard pathology labels)
@@ -579,15 +581,32 @@ class PlantDiseaseDetector:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             print(f"Initializing Plant Disease Detector on device: {self.device}")
 
-            self.model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
+            self.model = models.mobilenet_v2(weights=None)
             in_features = self.model.classifier[1].in_features
             self.model.classifier = nn.Sequential(
-                nn.Dropout(p=0.2),
+                nn.Dropout(p=0.3),
                 nn.Linear(in_features, len(CLASS_NAMES))
             )
 
-            if os.path.exists(MODEL_WEIGHTS_PATH):
-                print(f"Loading local fine-tuned weights from {MODEL_WEIGHTS_PATH}...")
+            # Priority: 1) Our trained model, 2) Legacy third-party weights
+            loaded = False
+            if os.path.exists(TRAINED_MODEL_PATH):
+                try:
+                    print(f"Loading OptiCrop-trained model from {TRAINED_MODEL_PATH}...")
+                    checkpoint = torch.load(TRAINED_MODEL_PATH, map_location=self.device)
+                    # Load class mapping from checkpoint if available
+                    if 'class_mapping' in checkpoint:
+                        trained_classes = checkpoint['class_mapping']
+                        print(f"  Trained on {checkpoint.get('num_classes', len(trained_classes))} classes, "
+                              f"best val_acc={checkpoint.get('val_acc', 'N/A'):.2f}%")
+                    self.model.load_state_dict(checkpoint['model_state_dict'])
+                    loaded = True
+                    print("OptiCrop-trained disease model loaded successfully!")
+                except Exception as e:
+                    print(f"Failed to load trained model: {e}, trying legacy weights...")
+
+            if not loaded and os.path.exists(MODEL_WEIGHTS_PATH):
+                print(f"Loading legacy fine-tuned weights from {MODEL_WEIGHTS_PATH}...")
                 state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location=self.device)
                 remap = {}
                 for k, v in state_dict.items():
@@ -598,6 +617,10 @@ class PlantDiseaseDetector:
                         new_k = 'classifier.1.bias'
                     remap[new_k] = v
                 self.model.load_state_dict(remap, strict=False)
+                loaded = True
+
+            if not loaded:
+                print("Warning: No disease model weights found. Using untrained model.")
 
             self.model.to(self.device)
             self.model.eval()
