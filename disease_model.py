@@ -6,10 +6,10 @@ import numpy as np
 from PIL import Image
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_WEIGHTS_PATH = os.path.join(BASE_DIR, "plant_disease_mobilenet_v2.pth")
-TRAINED_MODEL_PATH = os.path.join(BASE_DIR, "training_output", "best_model.pth")
-TRAINED_CLASS_MAP = os.path.join(BASE_DIR, "training_output", "class_mapping.json")
-ONNX_MODEL_PATH = os.path.join(BASE_DIR, "plant_disease_model.onnx")
+MODEL_WEIGHTS_PATH = os.environ.get("MODEL_WEIGHTS_PATH", os.path.join(BASE_DIR, "plant_disease_mobilenet_v2.pth"))
+TRAINED_MODEL_PATH = os.environ.get("TRAINED_MODEL_PATH", os.path.join(BASE_DIR, "training_output", "best_model.pth"))
+TRAINED_CLASS_MAP = os.environ.get("TRAINED_CLASS_MAP", os.path.join(BASE_DIR, "class_mapping.json") if os.path.exists(os.path.join(BASE_DIR, "class_mapping.json")) else os.path.join(BASE_DIR, "training_output", "class_mapping.json"))
+ONNX_MODEL_PATH = os.environ.get("ONNX_MODEL_PATH", os.environ.get("DISEASE_MODEL_PATH", os.path.join(BASE_DIR, "plant_disease_model.onnx")))
 
 # Benchmark PlantVillage 38 Classes (standard pathology labels)
 CLASS_NAMES = [
@@ -557,17 +557,48 @@ class PlantDiseaseDetector:
 
     def _initialize_pipeline(self):
         """Initialize model — prefer ONNX Runtime, fall back to PyTorch."""
+        onnx_path = ONNX_MODEL_PATH
+
+        # If ONNX model does not exist locally, attempt downloading from remote URL if configured
+        if not os.path.exists(onnx_path):
+            remote_url = os.environ.get("ONNX_MODEL_URL") or os.environ.get("DISEASE_MODEL_URL")
+            if remote_url:
+                try:
+                    import tempfile
+                    target_dir = os.environ.get("VERCEL_TMPDIR", tempfile.gettempdir())
+                    target_file = os.path.join(target_dir, "plant_disease_model.onnx")
+                    if not os.path.exists(target_file) or os.path.getsize(target_file) < 1024 * 1024:
+                        print(f"Downloading disease model weights from {remote_url} to {target_file}...")
+                        req = urllib.request.Request(remote_url, headers={'User-Agent': 'OptiCrop/1.0'})
+                        with urllib.request.urlopen(req, timeout=45) as resp, open(target_file, 'wb') as out_f:
+                            while True:
+                                chunk = resp.read(65536)
+                                if not chunk:
+                                    break
+                                out_f.write(chunk)
+                        print(f"Disease model downloaded successfully ({os.path.getsize(target_file)} bytes).")
+                    if os.path.exists(target_file) and os.path.getsize(target_file) > 1024 * 1024:
+                        onnx_path = target_file
+                except Exception as dl_err:
+                    print(f"Failed to download remote disease model: {dl_err}")
+
         # Try ONNX Runtime first (lightweight, Vercel-compatible)
-        if os.path.exists(ONNX_MODEL_PATH):
+        if os.path.exists(onnx_path):
             try:
                 import onnxruntime as ort
                 self.session = ort.InferenceSession(
-                    ONNX_MODEL_PATH,
+                    onnx_path,
                     providers=['CPUExecutionProvider']
                 )
+                # Verify model with warm-up inference to guarantee correct output shape
+                dummy_input = np.zeros((1, 3, 224, 224), dtype=np.float32)
+                in_name = self.session.get_inputs()[0].name
+                warmup_out = self.session.run(None, {in_name: dummy_input})[0]
+                if warmup_out.shape[-1] != len(CLASS_NAMES):
+                    raise ValueError(f"Model output dimension mismatch: expected {len(CLASS_NAMES)}, got {warmup_out.shape[-1]}")
                 self.use_onnx = True
                 self.model = True  # Sentinel for health checks
-                print(f"Plant Disease Detector initialized with ONNX Runtime!")
+                print(f"Plant Disease Detector initialized with ONNX Runtime ({onnx_path})!")
                 return
             except Exception as e:
                 print(f"ONNX Runtime init failed: {e}, falling back to PyTorch...")

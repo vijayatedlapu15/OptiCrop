@@ -5,10 +5,19 @@ training_output/
 __pycache__/
 .pytest_cache/
 .git/
+venv/
+.venv/
+env/
 *.pth
 *.zip
 *.pyc
 *.pyo
+*.onnx.data
+*.bak
+*.log
+scratch/
+.coverage
+htmlcov/
 
 # Training & dev scripts (not needed in production)
 train_disease_model.py
@@ -27,7 +36,7 @@ test_disease_fix.py
 test_enhancements.py
 tests.py
 
-# Dev files
+# Dev documentation & scratch files
 IMPLEMENTATION_STATUS.md
 *.md
 !README.md

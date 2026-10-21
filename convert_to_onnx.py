@@ -71,6 +71,18 @@ torch.onnx.export(
     }
 )
 
+# Consolidate external data into a standalone ONNX file if needed
+try:
+    import onnx
+    m = onnx.load(ONNX_PATH, load_external_data=True)
+    onnx.save_model(m, ONNX_PATH, save_as_external_data=False)
+    data_path = ONNX_PATH + ".data"
+    if os.path.exists(data_path):
+        os.remove(data_path)
+    print("Consolidated into self-contained standalone ONNX file.")
+except Exception as e:
+    print(f"Standalone consolidation notice: {e}")
+
 onnx_size = os.path.getsize(ONNX_PATH)
 print(f"\nONNX model saved: {ONNX_PATH}")
 print(f"ONNX size: {onnx_size / 1024 / 1024:.1f} MB")
