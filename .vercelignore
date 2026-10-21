@@ -1,0 +1,33 @@
+# Vercel deployment - exclude large/unnecessary files
+datasets/
+backup/
+training_output/
+__pycache__/
+.pytest_cache/
+.git/
+*.pth
+*.zip
+*.pyc
+*.pyo
+
+# Training & dev scripts (not needed in production)
+train_disease_model.py
+download_plantvillage.py
+download_per_class.py
+download_dataset_alt.py
+model.py
+model_evaluation.py
+inspect_model.py
+convert_to_onnx.py
+verify_final.py
+check_url.py
+query_app.py
+test_app.py
+test_disease_fix.py
+test_enhancements.py
+tests.py
+
+# Dev files
+IMPLEMENTATION_STATUS.md
+*.md
+!README.md
