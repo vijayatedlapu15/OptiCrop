@@ -5,10 +5,30 @@ import pandas as pd
 import numpy as np
 from flask import Flask, render_template, request, jsonify, send_file
 
-app = Flask(__name__)
+import sys
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+# Avoid watchdog reloader deadlock during vercel dev on Windows
+if os.environ.get("VERCEL_DEV_FRAMEWORK") == "flask":
+    try:
+        import sys
+        if "vercel_runtime.dev" in sys.modules:
+            vr_dev = sys.modules["vercel_runtime.dev"]
+            _orig_run = vr_dev.run_simple
+            vr_dev.run_simple = lambda *a, **kw: _orig_run(*a, **{**kw, "use_reloader": False})
+        import vercel_runtime._vendor.werkzeug.serving as vr_serving
+        _orig_vr_run = vr_serving.run_simple
+        vr_serving.run_simple = lambda *a, **kw: _orig_vr_run(*a, **{**kw, "use_reloader": False})
+    except Exception:
+        pass
+
+STATIC_DIR = os.path.join(BASE_DIR, "public", "static") if os.path.exists(os.path.join(BASE_DIR, "public", "static")) else os.path.join(BASE_DIR, "static")
+
+app = Flask(__name__, static_folder=STATIC_DIR)
 MODEL_PATH = os.path.join(BASE_DIR, "crop_recommendation_model.pkl")
 STATS_PATH = os.path.join(BASE_DIR, "crop_stats.json")
 DATA_PATH = os.path.join(BASE_DIR, "Crop_recommendation.csv")
@@ -539,4 +559,5 @@ def api_compare_crops():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)

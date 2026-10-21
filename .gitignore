@@ -17,6 +17,7 @@ env/
 .idea/
 *.swp
 *.swo
+.vercel/
 
 # OS
 .DS_Store

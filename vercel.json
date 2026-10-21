@@ -1,19 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    {
-      "source": "/static/(.*)",
-      "destination": "/static/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/app.py"
-    }
-  ],
   "functions": {
     "app.py": {
       "maxDuration": 30,
-      "includeFiles": "{templates/**,static/**,class_mapping.json,crop_stats.json,Crop_recommendation.csv,crop_environmental_requirements.csv,evaluation_metrics.json,crop_recommendation_model.pkl,plant_disease_model.onnx}",
+      "includeFiles": "{templates/**,static/**,public/**,class_mapping.json,crop_stats.json,Crop_recommendation.csv,crop_environmental_requirements.csv,evaluation_metrics.json,crop_recommendation_model.pkl,plant_disease_model.onnx}",
       "excludeFiles": "{datasets/**,backup/**,training_output/**,test*/**,tests.py,test_*.py,train_*.py,download_*.py,inspect_model.py,convert_*.py,check_*.py,query_*.py,model.py,model_eval*.py,verify_*.py,*.pth,*.zip,*.md}"
     }
   }

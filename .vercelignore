@@ -5,6 +5,7 @@ training_output/
 __pycache__/
 .pytest_cache/
 .git/
+.vercel/
 venv/
 .venv/
 env/
