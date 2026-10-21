@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OptiCrop - Smart Agricultural Optimization Engine</title>
-    <meta name="description" content="OptiCrop is an advanced data-driven crop recommendation, suitability assessment, and agricultural policy planning optimization engine.">
+    <meta name="description"
+        content="OptiCrop is an advanced data-driven crop recommendation, suitability assessment, and agricultural policy planning optimization engine.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,6 +18,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Sidebar Navigation -->
@@ -24,29 +27,36 @@
                 <i class="fa-solid fa-leaf brand-icon"></i>
                 <span class="brand-text">OptiCrop</span>
             </div>
-            
+
             <nav class="sidebar-menu">
-                <a href="{{ url_for('home') }}" class="menu-item {% if request.path == '/' %}active{% endif %}" id="nav-home">
+                <a href="{{ url_for('home') }}" class="menu-item {% if request.path == '/' %}active{% endif %}"
+                    id="nav-home">
                     <i class="fa-solid fa-chart-pie menu-icon"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ url_for('recommend') }}" class="menu-item {% if request.path == '/recommend' %}active{% endif %}" id="nav-recommend">
+                <a href="{{ url_for('recommend') }}"
+                    class="menu-item {% if request.path == '/recommend' %}active{% endif %}" id="nav-recommend">
                     <i class="fa-solid fa-wand-magic-sparkles menu-icon"></i>
                     <span>Crop Recommend</span>
                 </a>
-                <a href="{{ url_for('suitability') }}" class="menu-item {% if request.path == '/suitability' %}active{% endif %}" id="nav-suitability">
+                <a href="{{ url_for('suitability') }}"
+                    class="menu-item {% if request.path == '/suitability' %}active{% endif %}" id="nav-suitability">
                     <i class="fa-solid fa-gauge-high menu-icon"></i>
                     <span>Crop Suitability</span>
-                <a href="{{ url_for('disease_detection') }}" class="menu-item {% if request.path == '/disease-detection' %}active{% endif %}" id="nav-disease">
+                </a>
+                <a href="{{ url_for('disease_detection') }}"
+                    class="menu-item {% if request.path == '/disease-detection' %}active{% endif %}"
+                    id="nav-disease">
                     <i class="fa-solid fa-leaf menu-icon"></i>
                     <span>Plant Disease</span>
                 </a>
-                <a href="{{ url_for('research') }}" class="menu-item {% if request.path == '/research' %}active{% endif %}" id="nav-research">
+                <a href="{{ url_for('research') }}"
+                    class="menu-item {% if request.path == '/research' %}active{% endif %}" id="nav-research">
                     <i class="fa-solid fa-chart-column menu-icon"></i>
                     <span>Research Analytics</span>
                 </a>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="user-profile">
                     <div class="avatar"><i class="fa-solid fa-microchip"></i></div>
@@ -63,7 +73,9 @@
             <header class="top-header">
                 <div class="header-search">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" placeholder="Search insights, crops, guidelines..." disabled>
+                    <input type="text" id="global-search" placeholder="Search crops, disease, suitability, analytics..."
+                        autocomplete="off">
+                    <div id="search-results" class="search-results"></div>
                 </div>
                 <div class="header-actions">
                     <div class="theme-badge" id="engine-status-badge">
@@ -72,13 +84,14 @@
                     </div>
                 </div>
             </header>
-            
+
             <div class="content-body">
                 {% block content %}{% endblock %}
             </div>
-            
+
             <footer class="footer">
-                <p>&copy; 2026 OptiCrop — Smart Agricultural Production Optimization Engine. Precision Machine Learning for Sustainable Farming.</p>
+                <p>&copy; 2026 OptiCrop — Smart Agricultural Production Optimization Engine. Precision Machine Learning
+                    for Sustainable Farming.</p>
             </footer>
         </main>
     </div>
@@ -86,4 +99,5 @@
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>

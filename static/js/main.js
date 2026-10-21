@@ -9,6 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
         dateEl.textContent = new Date().toLocaleDateString('en-US', options);
     }
 
+    // Global Search
+    setupGlobalSearch();
+
     // Engine Health Check
     checkEngineHealth();
 
@@ -45,20 +48,20 @@ function setupSliderSync() {
     sliders.forEach(slider => {
         const targetId = slider.getAttribute("data-target");
         const numberInput = document.getElementById(targetId);
-        
+
         if (numberInput) {
             // Set slider initial value to match input
             if (numberInput.value) {
                 slider.value = numberInput.value;
             }
-            
+
             // Slider drag updates input
             slider.addEventListener("input", (e) => {
                 numberInput.value = e.target.value;
                 // Trigger change event on numberInput to update calculations if necessary
                 numberInput.dispatchEvent(new Event('change'));
             });
-            
+
             // Input changes update slider
             numberInput.addEventListener("input", (e) => {
                 if (e.target.value) {
@@ -84,7 +87,7 @@ function setupPresets() {
             document.getElementById("input-hum").value = data.hum;
             document.getElementById("input-ph").value = data.ph;
             document.getElementById("input-rain").value = data.rain;
-            
+
             // Sync all range sliders
             const sliders = document.querySelectorAll(".sync-slider");
             sliders.forEach(slider => {
@@ -130,51 +133,80 @@ function setupFormHandlers() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             })
-            .then(res => res.json())
-            .then(data => {
-                submitBtn.innerHTML = originalHtml;
-                submitBtn.disabled = false;
+                .then(res => res.json())
+                .then(data => {
+                    submitBtn.innerHTML = originalHtml;
+                    submitBtn.disabled = false;
 
-                if (data.error) {
-                    alert("Error: " + data.error);
-                    return;
-                }
+                    if (data.error) {
+                        alert("Error: " + data.error);
+                        return;
+                    }
 
-                // Show result panel, hide empty state
-                document.getElementById("recommend-empty-state").style.display = "none";
-                const resultCard = document.getElementById("recommend-result-card");
-                resultCard.style.display = "block";
-                resultCard.scrollIntoView({ behavior: 'smooth' });
+                    // Show result panel, hide empty state
+                    document.getElementById("recommend-empty-state").style.display = "none";
+                    const resultCard = document.getElementById("recommend-result-card");
+                    resultCard.style.display = "block";
+                    resultCard.scrollIntoView({ behavior: 'smooth' });
 
-                // Fill details
-                document.getElementById("crop-recommendation-name").textContent = data.crop;
-                
-                // Confidence bar
-                document.getElementById("crop-confidence-val").textContent = data.confidence + "%";
-                document.getElementById("crop-confidence-fill").style.width = data.confidence + "%";
+                    // Fill details
+                    document.getElementById("crop-recommendation-name").textContent = data.crop;
 
-                // Suitability bar
-                document.getElementById("crop-suitability-val").textContent = data.suitability_score + "%";
-                document.getElementById("crop-suitability-fill").style.width = data.suitability_score + "%";
+                    // Display Top 3 Crop Recommendations
+                    const topCropsContainer = document.getElementById("top-crops-container");
 
-                // Fill Table
-                const tableBody = document.getElementById("details-table-body");
-                tableBody.innerHTML = "";
-                
-                const features = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'];
-                const displayNames = {
-                    'N': 'Nitrogen (N)',
-                    'P': 'Phosphorous (P)',
-                    'K': 'Potassium (K)',
-                    'temperature': 'Temperature (°C)',
-                    'humidity': 'Humidity (%)',
-                    'ph': 'Soil pH',
-                    'rainfall': 'Rainfall (mm)'
-                };
+                    if (topCropsContainer) {
+                        topCropsContainer.innerHTML = "";
 
-                features.forEach(feat => {
-                    const item = data.details[feat];
-                    const row = `
+                        (data.top_crops || []).forEach((crop, index) => {
+                            const cropCard = document.createElement("div");
+                            cropCard.className = "top-crop-item";
+
+                            const rankLabel = ["🥇", "🥈", "🥉"][index] || `#${index + 1}`;
+
+                            cropCard.innerHTML = `
+                                <div class="top-crop-rank">${rankLabel}</div>
+                                <div class="top-crop-info">
+                                    <strong>${crop.crop}</strong>
+                                    <span>Model probability: ${crop.confidence}%</span>
+                                </div>
+                                <div class="top-crop-score">
+                                    <span>Suitability</span>
+                                    <strong>${Number(crop.suitability_score).toFixed(1)}%</strong>
+                                </div>
+                            `;
+
+                            topCropsContainer.appendChild(cropCard);
+                        });
+                    }
+
+
+                    // Confidence bar
+                    document.getElementById("crop-confidence-val").textContent = data.confidence + "%";
+                    document.getElementById("crop-confidence-fill").style.width = data.confidence + "%";
+
+                    // Suitability bar
+                    document.getElementById("crop-suitability-val").textContent = data.suitability_score + "%";
+                    document.getElementById("crop-suitability-fill").style.width = data.suitability_score + "%";
+
+                    // Fill Table
+                    const tableBody = document.getElementById("details-table-body");
+                    tableBody.innerHTML = "";
+
+                    const features = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'];
+                    const displayNames = {
+                        'N': 'Nitrogen (N)',
+                        'P': 'Phosphorous (P)',
+                        'K': 'Potassium (K)',
+                        'temperature': 'Temperature (°C)',
+                        'humidity': 'Humidity (%)',
+                        'ph': 'Soil pH',
+                        'rainfall': 'Rainfall (mm)'
+                    };
+
+                    features.forEach(feat => {
+                        const item = data.details[feat];
+                        const row = `
                         <tr>
                             <td><strong>${displayNames[feat]}</strong></td>
                             <td>${item.current}</td>
@@ -182,18 +214,18 @@ function setupFormHandlers() {
                             <td><span class="status-badge ${item.status_color}">${item.status}</span></td>
                         </tr>
                     `;
-                    tableBody.insertAdjacentHTML('beforeend', row);
-                });
+                        tableBody.insertAdjacentHTML('beforeend', row);
+                    });
 
-                // Build Radar Chart
-                buildRecommendRadar(data.crop, formData, data.details);
-            })
-            .catch(err => {
-                console.error(err);
-                submitBtn.innerHTML = originalHtml;
-                submitBtn.disabled = false;
-                alert("Server connection failed.");
-            });
+                    // Build Radar Chart
+                    buildRecommendRadar(data.crop, formData, data.details);
+                })
+                .catch(err => {
+                    console.error(err);
+                    submitBtn.innerHTML = originalHtml;
+                    submitBtn.disabled = false;
+                    alert("Server connection failed.");
+                });
         });
     }
 
@@ -224,82 +256,82 @@ function setupFormHandlers() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             })
-            .then(res => res.json())
-            .then(data => {
-                submitBtn.innerHTML = originalHtml;
-                submitBtn.disabled = false;
+                .then(res => res.json())
+                .then(data => {
+                    submitBtn.innerHTML = originalHtml;
+                    submitBtn.disabled = false;
 
-                if (data.error) {
-                    alert("Error: " + data.error);
-                    return;
-                }
+                    if (data.error) {
+                        alert("Error: " + data.error);
+                        return;
+                    }
 
-                // Show result panel, hide empty state
-                document.getElementById("suitability-empty-state").style.display = "none";
-                const resultCard = document.getElementById("suitability-result-card");
-                resultCard.style.display = "block";
-                resultCard.scrollIntoView({ behavior: 'smooth' });
+                    // Show result panel, hide empty state
+                    document.getElementById("suitability-empty-state").style.display = "none";
+                    const resultCard = document.getElementById("suitability-result-card");
+                    resultCard.style.display = "block";
+                    resultCard.scrollIntoView({ behavior: 'smooth' });
 
-                // Overall suitability percentage
-                document.getElementById("suitability-overall-val").textContent = data.overall_score + "%";
-                
-                let desc = "Optimal Alignment";
-                let strokeColor = "#2ecc71";
-                if (data.overall_score < 40) {
-                    desc = "Not Recommended";
-                    strokeColor = "#e74c3c";
-                } else if (data.overall_score < 75) {
-                    desc = "Marginally Suitable";
-                    strokeColor = "#f1c40f";
-                }
-                
-                const descEl = document.getElementById("suitability-overall-desc");
-                descEl.textContent = desc;
-                descEl.className = "suitability-status-label";
-                if (data.overall_score < 40) descEl.style.color = "var(--danger)";
-                else if (data.overall_score < 75) descEl.style.color = "var(--accent)";
-                else descEl.style.color = "var(--primary)";
+                    // Overall suitability percentage
+                    document.getElementById("suitability-overall-val").textContent = data.overall_score + "%";
 
-                // Update Gauge path Dashoffset
-                // Full dasharray for A 40 40 semicircle path is roughly 125.6
-                // Dashoffset goes from 125.6 (0%) to 0 (100%)
-                const dashoffset = 125.6 - (125.6 * (data.overall_score / 100));
-                const gaugeFill = document.getElementById("gauge-fill");
-                gaugeFill.setAttribute("stroke", strokeColor);
-                gaugeFill.style.strokeDashoffset = dashoffset;
+                    let desc = "Optimal Alignment";
+                    let strokeColor = "#2ecc71";
+                    if (data.overall_score < 40) {
+                        desc = "Not Recommended";
+                        strokeColor = "#e74c3c";
+                    } else if (data.overall_score < 75) {
+                        desc = "Marginally Suitable";
+                        strokeColor = "#f1c40f";
+                    }
 
-                // Build advice list
-                const adviceList = document.getElementById("suitability-advice-list");
-                adviceList.innerHTML = "";
+                    const descEl = document.getElementById("suitability-overall-desc");
+                    descEl.textContent = desc;
+                    descEl.className = "suitability-status-label";
+                    if (data.overall_score < 40) descEl.style.color = "var(--danger)";
+                    else if (data.overall_score < 75) descEl.style.color = "var(--accent)";
+                    else descEl.style.color = "var(--primary)";
 
-                const features = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'];
-                const displayNames = {
-                    'N': 'Nitrogen (N) Content',
-                    'P': 'Phosphorous (P) Content',
-                    'K': 'Potassium (K) Content',
-                    'temperature': 'Temperature Level',
-                    'humidity': 'Humidity Level',
-                    'ph': 'Soil pH Index',
-                    'rainfall': 'Precipitation/Rainfall'
-                };
+                    // Update Gauge path Dashoffset
+                    // Full dasharray for A 40 40 semicircle path is roughly 125.6
+                    // Dashoffset goes from 125.6 (0%) to 0 (100%)
+                    const dashoffset = 125.6 - (125.6 * (data.overall_score / 100));
+                    const gaugeFill = document.getElementById("gauge-fill");
+                    gaugeFill.setAttribute("stroke", strokeColor);
+                    gaugeFill.style.strokeDashoffset = dashoffset;
 
-                const iconMap = {
-                    'N': 'fa-flask', 'P': 'fa-flask-vial', 'K': 'fa-mortar-pestle',
-                    'temperature': 'fa-temperature-quarter', 'humidity': 'fa-droplet',
-                    'ph': 'fa-eye-dropper', 'rainfall': 'fa-cloud-rain'
-                };
+                    // Build advice list
+                    const adviceList = document.getElementById("suitability-advice-list");
+                    adviceList.innerHTML = "";
 
-                features.forEach(feat => {
-                    const item = data.details[feat];
-                    
-                    let bgBadgeClass = item.status_color;
-                    let iconName = iconMap[feat];
-                    
-                    let feedbackIcon = "fa-circle-check";
-                    if (item.status_color === "warning") feedbackIcon = "fa-triangle-exclamation";
-                    else if (item.status_color === "danger") feedbackIcon = "fa-circle-xmark";
+                    const features = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'];
+                    const displayNames = {
+                        'N': 'Nitrogen (N) Content',
+                        'P': 'Phosphorous (P) Content',
+                        'K': 'Potassium (K) Content',
+                        'temperature': 'Temperature Level',
+                        'humidity': 'Humidity Level',
+                        'ph': 'Soil pH Index',
+                        'rainfall': 'Precipitation/Rainfall'
+                    };
 
-                    const cardHtml = `
+                    const iconMap = {
+                        'N': 'fa-flask', 'P': 'fa-flask-vial', 'K': 'fa-mortar-pestle',
+                        'temperature': 'fa-temperature-quarter', 'humidity': 'fa-droplet',
+                        'ph': 'fa-eye-dropper', 'rainfall': 'fa-cloud-rain'
+                    };
+
+                    features.forEach(feat => {
+                        const item = data.details[feat];
+
+                        let bgBadgeClass = item.status_color;
+                        let iconName = iconMap[feat];
+
+                        let feedbackIcon = "fa-circle-check";
+                        if (item.status_color === "warning") feedbackIcon = "fa-triangle-exclamation";
+                        else if (item.status_color === "danger") feedbackIcon = "fa-circle-xmark";
+
+                        const cardHtml = `
                         <div class="advice-card">
                             <div class="advice-icon-column text-${bgBadgeClass}">
                                 <i class="fa-solid ${iconName}"></i>
@@ -316,18 +348,18 @@ function setupFormHandlers() {
                             </div>
                         </div>
                     `;
-                    adviceList.insertAdjacentHTML('beforeend', cardHtml);
-                });
+                        adviceList.insertAdjacentHTML('beforeend', cardHtml);
+                    });
 
-                // Build Radar Chart
-                buildSuitabilityRadar(crop, formData, data.details);
-            })
-            .catch(err => {
-                console.error(err);
-                submitBtn.innerHTML = originalHtml;
-                submitBtn.disabled = false;
-                alert("Server connection failed.");
-            });
+                    // Build Radar Chart
+                    buildSuitabilityRadar(crop, formData, data.details);
+                })
+                .catch(err => {
+                    console.error(err);
+                    submitBtn.innerHTML = originalHtml;
+                    submitBtn.disabled = false;
+                    alert("Server connection failed.");
+                });
         });
     }
 }
@@ -341,14 +373,14 @@ function buildRecommendRadar(cropName, inputs, details) {
     }
 
     const ctx = document.getElementById("recommendRadarChart").getContext("2d");
-    
+
     // Normalize properties on a relative scale (0 to 100) where 100 is the optimal mean
     const labels = ['Nitrogen', 'Phosphorus', 'Potassium', 'Temp', 'Humidity', 'pH', 'Rainfall'];
     const features = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'];
-    
+
     const inputValues = [];
     const idealValues = [];
-    
+
     features.forEach(feat => {
         const item = details[feat];
         // Relative values normalized by dividing by the mean (capped at 150%)
@@ -414,10 +446,10 @@ function buildSuitabilityRadar(cropName, inputs, details) {
     const ctx = document.getElementById("suitabilityRadarChart").getContext("2d");
     const labels = ['Nitrogen', 'Phosphorus', 'Potassium', 'Temp', 'Humidity', 'pH', 'Rainfall'];
     const features = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'];
-    
+
     const inputValues = [];
     const idealValues = [];
-    
+
     features.forEach(feat => {
         const item = details[feat];
         const mean = item.mean || 1;
@@ -511,7 +543,7 @@ function loadResearchDashboard() {
                 return;
             }
             rawDashboardData = data;
-            
+
             // Build soil tags
             buildSoilPolicyTags(data.soil_groups);
 
@@ -528,9 +560,9 @@ function loadResearchDashboard() {
                 btn.addEventListener("click", (e) => {
                     buttons.forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
-                    
+
                     const chartType = btn.getAttribute("data-chart");
-                    
+
                     const canvas = document.getElementById("researchLargeChart");
                     const heatmap = document.getElementById("heatmap-container");
 
@@ -544,7 +576,7 @@ function loadResearchDashboard() {
                     } else {
                         canvas.style.display = "block";
                         heatmap.style.display = "none";
-                        
+
                         if (chartType === "importance") {
                             if (evaluationData) {
                                 renderFeatureImportanceChart(evaluationData);
@@ -573,7 +605,7 @@ function loadResearchDashboard() {
                 btn.addEventListener("click", () => {
                     tabBtns.forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
-                    
+
                     const targetTab = btn.getAttribute("data-tab");
                     const panes = document.querySelectorAll(".tab-pane");
                     panes.forEach(pane => {
@@ -591,25 +623,25 @@ function buildSoilPolicyTags(groups) {
     const listWetland = document.getElementById("tags-wetland");
     const listAcidic = document.getElementById("tags-acidic");
     const listAlkaline = document.getElementById("tags-alkaline");
-    
+
     // Drought
     listDrought.innerHTML = "";
     groups.drought_tolerant.forEach(crop => {
         listDrought.insertAdjacentHTML('beforeend', `<span class="crop-tag">${crop}</span>`);
     });
-    
+
     // Wetland
     listWetland.innerHTML = "";
     groups.water_loving.forEach(crop => {
         listWetland.insertAdjacentHTML('beforeend', `<span class="crop-tag">${crop}</span>`);
     });
-    
+
     // Acidic
     listAcidic.innerHTML = "";
     groups.acidic_tolerant.forEach(crop => {
         listAcidic.insertAdjacentHTML('beforeend', `<span class="crop-tag">${crop}</span>`);
     });
-    
+
     // Alkaline
     listAlkaline.innerHTML = "";
     groups.alkaline_tolerant.forEach(crop => {
@@ -621,7 +653,7 @@ function renderMacronutrientsChart(data) {
     if (researchMainChart) {
         researchMainChart.destroy();
     }
-    
+
     const ctx = document.getElementById("researchLargeChart").getContext("2d");
     researchMainChart = new Chart(ctx, {
         type: 'bar',
@@ -678,7 +710,7 @@ function renderClimateChart(data) {
     if (researchMainChart) {
         researchMainChart.destroy();
     }
-    
+
     const ctx = document.getElementById("researchLargeChart").getContext("2d");
     researchMainChart = new Chart(ctx, {
         type: 'line',
@@ -740,24 +772,24 @@ function renderClimateChart(data) {
 function renderCorrelationHeatmap(data) {
     const grid = document.getElementById("heatmap-grid");
     grid.innerHTML = "";
-    
+
     const displayHeaders = ['', 'N', 'P', 'K', 'Temp', 'Hum', 'pH', 'Rain'];
-    
+
     // Draw Header row
     displayHeaders.forEach(header => {
         grid.insertAdjacentHTML('beforeend', `<div class="heatmap-header-cell">${header}</div>`);
     });
-    
+
     const features = ['N', 'P', 'K', 'Temp', 'Hum', 'pH', 'Rain'];
-    
+
     for (let r = 0; r < 7; r++) {
         // Label cell
         grid.insertAdjacentHTML('beforeend', `<div class="heatmap-header-cell" style="text-align: right; padding-right: 8px;"><strong>${features[r]}</strong></div>`);
-        
+
         for (let c = 0; c < 7; c++) {
             const coefficient = data.correlation[r][c];
             const displayVal = coefficient.toFixed(2);
-            
+
             // Generate color: Positive red/orange, Negative blue, Neutral black
             let bgColor = "rgba(255, 255, 255, 0.02)";
             if (coefficient > 0.05) {
@@ -767,7 +799,7 @@ function renderCorrelationHeatmap(data) {
                 // Negative correlation -> Red/Crimson strength
                 bgColor = `rgba(231, 76, 60, ${Math.abs(coefficient) * 0.9})`;
             }
-            
+
             const cellHtml = `
                 <div class="heatmap-cell" style="background-color: ${bgColor}" title="Correlation of ${features[r]} and ${features[c]} is ${displayVal}">
                     ${displayVal}
@@ -810,7 +842,7 @@ function renderFeatureImportanceChart(evalData) {
     if (researchMainChart) {
         researchMainChart.destroy();
     }
-    
+
     const canvas = document.getElementById("researchLargeChart");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -878,7 +910,7 @@ function renderFeatureImportanceChart(evalData) {
                 },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             return ` ${context.parsed.x}% of overall decision split impurity`;
                         }
                     }
@@ -1056,7 +1088,7 @@ function renderCropComparisonChart(data) {
                 },
                 tooltip: {
                     callbacks: {
-                        label: function(ctx) {
+                        label: function (ctx) {
                             const pKey = params[ctx.dataIndex];
                             const raw = ctx.datasetIndex === 0 ? data.parameters[pKey].crop1.mean : data.parameters[pKey].crop2.mean;
                             const unit = data.parameters[pKey].unit;
@@ -1178,23 +1210,23 @@ function setupDiseaseDetection() {
                 method: "POST",
                 body: formData
             })
-            .then(res => res.json())
-            .then(data => {
-                analyzeBtn.innerHTML = origHtml;
-                analyzeBtn.disabled = false;
+                .then(res => res.json())
+                .then(data => {
+                    analyzeBtn.innerHTML = origHtml;
+                    analyzeBtn.disabled = false;
 
-                if (data.error) {
-                    alert("Diagnosis Error: " + data.error);
-                    return;
-                }
+                    if (data.error) {
+                        alert("Diagnosis Error: " + data.error);
+                        return;
+                    }
 
-                renderDiseaseResults(data);
-            })
-            .catch(err => {
-                analyzeBtn.innerHTML = origHtml;
-                analyzeBtn.disabled = false;
-                alert("Network or inference error: " + err.message);
-            });
+                    renderDiseaseResults(data);
+                })
+                .catch(err => {
+                    analyzeBtn.innerHTML = origHtml;
+                    analyzeBtn.disabled = false;
+                    alert("Network or inference error: " + err.message);
+                });
         });
     }
 
@@ -1297,6 +1329,13 @@ function renderDiseaseResults(data) {
                 </div>
             `);
         });
+    }
+
+    // AI Disclaimer
+    const disclaimerEl = document.getElementById("disease-disclaimer");
+    if (disclaimerEl && data.disclaimer) {
+        disclaimerEl.style.display = "block";
+        disclaimerEl.textContent = data.disclaimer;
     }
 }
 
@@ -1418,3 +1457,149 @@ function setupWeatherAutofill() {
     }
 }
 
+function setupGlobalSearch() {
+
+    const searchInput = document.getElementById("global-search");
+    const resultsBox = document.getElementById("search-results");
+
+    if (!searchInput || !resultsBox) return;
+
+    const searchItems = [
+        {
+            title: "Dashboard",
+            description: "Smart agriculture overview and ML engine status",
+            keywords: "dashboard home overview agriculture",
+            url: "/"
+        },
+        {
+            title: "Crop Recommendation",
+            description: "Get the best crop based on soil and climate parameters",
+            keywords: "crop recommendation recommend N P K temperature humidity rainfall",
+            url: "/recommend"
+        },
+        {
+            title: "Crop Suitability",
+            description: "Analyze how suitable your soil and climate are for a crop",
+            keywords: "suitability soil climate assessment pH nitrogen phosphorus potassium",
+            url: "/suitability"
+        },
+        {
+            title: "Plant Disease Detection",
+            description: "Detect plant diseases using an AI computer-vision model",
+            keywords: "disease plant leaf detection tomato potato corn apple grape mobileNet",
+            url: "/disease-detection"
+        },
+        {
+            title: "Research Analytics",
+            description: "Explore model performance, feature importance and agricultural data",
+            keywords: "research analytics model accuracy precision recall F1 confusion matrix",
+            url: "/research"
+        },
+        {
+            title: "Crop Comparison",
+            description: "Compare two crops using empirical soil and climate requirements",
+            keywords: "compare crops rice maize crop comparison rainfall temperature",
+            url: "/suitability"
+        }
+    ];
+
+    function showResults(query) {
+
+        const text = query.trim().toLowerCase();
+
+        if (!text) {
+            resultsBox.innerHTML = "";
+            resultsBox.style.display = "none";
+            return;
+        }
+
+
+        const matches = searchItems
+            .map(item => {
+                const title = item.title.toLowerCase();
+                const desc = item.description.toLowerCase();
+                const kw = item.keywords.toLowerCase();
+                const titleWords = title.split(/[\s-]+/);
+                const kwWords = kw.split(/[\s-]+/);
+
+                let score = 0;
+
+                if (title === text) {
+                    score = 100;
+                } else if (title.startsWith(text)) {
+                    score = 90;
+                } else if (titleWords.some(word => word.startsWith(text))) {
+                    score = 80;
+                } else if (desc.includes(text)) {
+                    score = 60;
+                } else if (kwWords.some(word => word.startsWith(text))) {
+                    score = 50;
+                } else if (kw.includes(text)) {
+                    score = 40;
+                }
+
+                return { ...item, score };
+            })
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score);
+
+
+        if (matches.length === 0) {
+
+            resultsBox.innerHTML = `
+                <div class="search-no-results">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>No matching feature found</span>
+                </div>
+            `;
+
+            resultsBox.style.display = "block";
+            return;
+        }
+
+        resultsBox.innerHTML = matches.map(item => `
+            <a href="${item.url}" class="search-result-item">
+                <div class="search-result-icon">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+
+                <div class="search-result-content">
+                    <strong>${item.title}</strong>
+                    <span>${item.description}</span>
+                </div>
+            </a>
+        `).join("");
+
+        resultsBox.style.display = "block";
+    }
+
+    searchInput.addEventListener("input", function () {
+        showResults(this.value);
+    });
+
+    searchInput.addEventListener("keydown", function (event) {
+
+        if (event.key === "Escape") {
+            searchInput.value = "";
+            resultsBox.innerHTML = "";
+            resultsBox.style.display = "none";
+        }
+
+        if (event.key === "Enter") {
+
+            const firstResult =
+                resultsBox.querySelector(".search-result-item");
+
+            if (firstResult) {
+                firstResult.click();
+            }
+        }
+    });
+
+    document.addEventListener("click", function (event) {
+
+        if (!event.target.closest(".header-search")) {
+            resultsBox.style.display = "none";
+        }
+    });
+}

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Datasets (too large for git)
+datasets/
+*.zip
+
+# Backup folder (local only)
+backup/
+
+# Model artifacts (tracked via LFS or separate)
+# Uncomment if using Git LFS:
+# *.pth
+# *.pkl
+# *.onnx
+
+# Pytest
+.pytest_cache/
+
+# Training outputs
+training_output/

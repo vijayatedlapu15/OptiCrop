@@ -2,14 +2,12 @@ import os
 import io
 import json
 import urllib.request
+import numpy as np
 from PIL import Image
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_WEIGHTS_PATH = os.path.join(BASE_DIR, "plant_disease_mobilenet_v2.pth")
-WEIGHTS_URLS = [
-    "https://huggingface.co/Daksh159/plant-disease-mobilenetv2/resolve/main/mobilenetv2_plant.pth",
-    "https://raw.githubusercontent.com/abdullahselek/plant-disease-classification-pytorch/master/models/mobilenet_v2.pth"
-]
+ONNX_MODEL_PATH = os.path.join(BASE_DIR, "plant_disease_model.onnx")
 
 # Benchmark PlantVillage 38 Classes (standard pathology labels)
 CLASS_NAMES = [
@@ -543,9 +541,10 @@ class PlantDiseaseDetector:
     _instance = None
     
     def __init__(self):
-        self.model = None
+        self.session = None  # ONNX Runtime session
+        self.model = None    # PyTorch model (fallback)
         self.device = None
-        self.transform = None
+        self.use_onnx = False
         self._initialize_pipeline()
 
     @classmethod
@@ -555,6 +554,23 @@ class PlantDiseaseDetector:
         return cls._instance
 
     def _initialize_pipeline(self):
+        """Initialize model — prefer ONNX Runtime, fall back to PyTorch."""
+        # Try ONNX Runtime first (lightweight, Vercel-compatible)
+        if os.path.exists(ONNX_MODEL_PATH):
+            try:
+                import onnxruntime as ort
+                self.session = ort.InferenceSession(
+                    ONNX_MODEL_PATH,
+                    providers=['CPUExecutionProvider']
+                )
+                self.use_onnx = True
+                self.model = True  # Sentinel for health checks
+                print(f"Plant Disease Detector initialized with ONNX Runtime!")
+                return
+            except Exception as e:
+                print(f"ONNX Runtime init failed: {e}, falling back to PyTorch...")
+
+        # Fallback: PyTorch
         try:
             import torch
             import torch.nn as nn
@@ -563,7 +579,6 @@ class PlantDiseaseDetector:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             print(f"Initializing Plant Disease Detector on device: {self.device}")
 
-            # Define standard MobileNetV2 architecture fine-tuned for 38 PlantVillage classes
             self.model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
             in_features = self.model.classifier[1].in_features
             self.model.classifier = nn.Sequential(
@@ -571,19 +586,23 @@ class PlantDiseaseDetector:
                 nn.Linear(in_features, len(CLASS_NAMES))
             )
 
-            # Check if fine-tuned weights exist; if not, initialize robustly
             if os.path.exists(MODEL_WEIGHTS_PATH):
                 print(f"Loading local fine-tuned weights from {MODEL_WEIGHTS_PATH}...")
                 state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location=self.device)
-                self._load_weights_dict(state_dict)
-            else:
-                self._download_or_calibrate_weights()
+                remap = {}
+                for k, v in state_dict.items():
+                    new_k = k
+                    if k == 'classifier.1.1.weight':
+                        new_k = 'classifier.1.weight'
+                    elif k == 'classifier.1.1.bias':
+                        new_k = 'classifier.1.bias'
+                    remap[new_k] = v
+                self.model.load_state_dict(remap, strict=False)
 
             self.model.to(self.device)
             self.model.eval()
 
-            # Image preprocessing pipeline for MobileNetV2
-            self.transform = transforms.Compose([
+            self._torch_transform = transforms.Compose([
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
                 transforms.Normalize(
@@ -591,86 +610,75 @@ class PlantDiseaseDetector:
                     std=[0.229, 0.224, 0.225]
                 )
             ])
-            print("Plant Disease Detector initialized successfully!")
+            self.use_onnx = False
+            print("Plant Disease Detector initialized with PyTorch!")
         except Exception as e:
             print(f"Warning: Could not initialize deep learning pipeline: {e}")
             self.model = None
 
-    def _load_weights_dict(self, state_dict):
-        """Maps classifier weights robustly across different checkpoint naming conventions."""
-        remap = {}
-        for k, v in state_dict.items():
-            new_k = k
-            if k == 'classifier.1.1.weight':
-                new_k = 'classifier.1.weight'
-            elif k == 'classifier.1.1.bias':
-                new_k = 'classifier.1.bias'
-            remap[new_k] = v
-        self.model.load_state_dict(remap, strict=False)
+    def _preprocess_image_numpy(self, image):
+        """Preprocess PIL Image to numpy array for ONNX Runtime (no PyTorch needed)."""
+        image = image.convert('RGB').resize((224, 224), Image.BILINEAR)
+        img_array = np.array(image, dtype=np.float32) / 255.0
+        # Normalize with ImageNet mean/std
+        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        img_array = (img_array - mean) / std
+        # HWC -> CHW -> NCHW
+        img_array = np.transpose(img_array, (2, 0, 1))
+        img_array = np.expand_dims(img_array, axis=0)
+        return img_array
 
-    def _download_or_calibrate_weights(self):
-        """Attempts to download fine-tuned weights or creates reproducible calibrated weights."""
-        print("Checking weights availability...")
-        for url in WEIGHTS_URLS:
-            try:
-                print(f"Attempting download from {url}...")
-                req = urllib.request.Request(
-                    url,
-                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                )
-                with urllib.request.urlopen(req, timeout=15) as response:
-                    with open(MODEL_WEIGHTS_PATH, 'wb') as f:
-                        f.write(response.read())
-                print("Weights downloaded successfully!")
-                import torch
-                state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location=self.device)
-                self._load_weights_dict(state_dict)
-                return
-            except Exception as e:
-                print(f"Download from {url} failed: {e}")
-        
-        # If download fails, save initialized weights for deterministic inference
-        print("Saving calibrated transfer weights locally...")
-        try:
-            import torch
-            torch.save(self.model.state_dict(), MODEL_WEIGHTS_PATH)
-        except Exception as err:
-            print(f"Could not save local weights: {err}")
+    def _softmax(self, logits):
+        """Compute softmax over a 1-D numpy array."""
+        exp_logits = np.exp(logits - np.max(logits))
+        return exp_logits / exp_logits.sum()
+
+    def _entropy(self, probs):
+        """Compute Shannon entropy of probability distribution. Higher = more uncertain."""
+        probs = probs[probs > 1e-10]  # avoid log(0)
+        return -np.sum(probs * np.log(probs))
+
+    def _max_entropy(self, n_classes):
+        """Maximum possible entropy for n_classes (uniform distribution)."""
+        return np.log(n_classes)
 
     def predict(self, image_bytes):
         """
         Runs real-time inference on an input image byte stream.
         Returns structured prediction diagnostics, symptoms, care advice, and confidence calibrations.
         """
-        if self.model is None or self.transform is None:
+        if self.model is None:
             return {
                 'success': False,
-                'error': 'Deep Learning inference engine is not ready. PyTorch or model weights unavailable.'
+                'error': 'Deep Learning inference engine is not ready. Model unavailable.'
             }
 
         try:
-            import torch
-            import torch.nn.functional as F
-
             # 1. Open and validate image
-            image = Image.open(io.BytesIO(image_bytes))
-            if image.format not in ['JPEG', 'PNG', 'MPO', None] and getattr(image, 'format', None) not in ['JPEG', 'PNG', 'JPG']:
-                # Still check if we can convert
-                pass
+            image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
-            image = image.convert('RGB')
-            tensor = self.transform(image).unsqueeze(0).to(self.device)
+            if self.use_onnx and self.session is not None:
+                # ONNX Runtime inference
+                input_array = self._preprocess_image_numpy(image)
+                input_name = self.session.get_inputs()[0].name
+                logits = self.session.run(None, {input_name: input_array})[0][0]
+                probs = self._softmax(logits)
+                top_indices = np.argsort(probs)[::-1][:3]
+                top_probs = probs[top_indices]
+            else:
+                # PyTorch inference
+                import torch
+                import torch.nn.functional as F
+                tensor = self._torch_transform(image).unsqueeze(0).to(self.device)
+                with torch.no_grad():
+                    logits = self.model(tensor)
+                    probs_t = F.softmax(logits, dim=1)[0]
+                top_probs_t, top_indices_t = torch.topk(probs_t, k=3)
+                top_probs = top_probs_t.cpu().numpy()
+                top_indices = top_indices_t.cpu().numpy()
 
-            # 2. Run model forward pass
-            with torch.no_grad():
-                logits = self.model(tensor)
-                probs = F.softmax(logits, dim=1)[0]
-
-            # 3. Extract top-1 and top-3 candidates
-            top_probs, top_indices = torch.topk(probs, k=3)
-            top_probs = top_probs.cpu().numpy()
-            top_indices = top_indices.cpu().numpy()
-
+            # 2. Extract results
             primary_idx = int(top_indices[0])
             confidence = float(top_probs[0])
             class_key = CLASS_NAMES[primary_idx]
@@ -696,14 +704,36 @@ class PlantDiseaseDetector:
                     'confidence': round(float(prob) * 100, 2)
                 })
 
-            # 4. Out-of-distribution & low-confidence safety check
+            # 3. Out-of-distribution & low-confidence safety check
             warning_msg = None
-            if confidence < 0.60:
+            entropy = float(self._entropy(np.array([float(p) for p in top_probs])))
+            max_ent = float(self._max_entropy(len(CLASS_NAMES)))
+            normalized_entropy = entropy / max_ent if max_ent > 0 else 0
+            
+            if confidence < 0.40:
                 warning_msg = (
-                    "Caution: Low Diagnostic Confidence (< 60%). The uploaded image may be out-of-focus, "
-                    "improperly lit, or exhibit symptoms outside the 38 supported benchmark classes. "
-                    "Verify with a local agricultural extension specialist before applying chemical treatments."
+                    "Very Low Confidence: The model's top prediction is below 40%. "
+                    "This image likely contains a plant, disease, or condition outside the 38 supported classes. "
+                    "Do NOT rely on this result. Consult a local agricultural extension specialist."
                 )
+            elif confidence < 0.60:
+                warning_msg = (
+                    "Low Confidence: The model's top prediction is below 60%. "
+                    "The image may be unclear, improperly lit, or show a condition outside the supported classes. "
+                    "Treat this as a preliminary suggestion only — verify with an expert before taking action."
+                )
+            elif normalized_entropy > 0.7:
+                warning_msg = (
+                    "High Uncertainty: The model is distributing probability across many classes, "
+                    "suggesting it is uncertain about this image. Verify with an expert."
+                )
+
+            # Always include the AI disclaimer
+            disclaimer = (
+                "This is an AI-assisted preliminary assessment, not a guaranteed diagnosis. "
+                "Always verify with a qualified agricultural specialist before applying treatments. "
+                "Product choice and application must follow local regulations and label instructions."
+            )
 
             return {
                 'success': True,
@@ -717,6 +747,7 @@ class PlantDiseaseDetector:
                 'care_recommendations': meta['care'],
                 'prevention': meta['prevention'],
                 'warning': warning_msg,
+                'disclaimer': disclaimer,
                 'top_candidates': candidates
             }
 

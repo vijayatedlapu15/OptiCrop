@@ -44,7 +44,30 @@ def load_resources():
 # Call load_resources immediately on import (for serverless environments like Vercel)
 load_resources()
 
+def validate_crop_inputs(values):
+    limits = {
+        "N": (0, 150),
+        "P": (5, 150),
+        "K": (5, 210),
+        "temperature": (5, 50),
+        "humidity": (10, 100),
+        "ph": (3.5, 10),
+        "rainfall": (10, 350),
+    }
 
+    for field, (minimum, maximum) in limits.items():
+        value = values[field]
+
+        if not np.isfinite(value):
+            return f"{field} must be a valid finite number."
+
+        if not minimum <= value <= maximum:
+            return (
+                f"{field} must be between "
+                f"{minimum} and {maximum}."
+            )
+
+    return None
 
 # Helper: calculate compatibility score and get recommendations
 def calculate_suitability(crop_name, n, p, k, temp, hum, ph, rain):
@@ -195,23 +218,62 @@ def api_recommend():
         ph = float(data.get('ph'))
         rain = float(data.get('rainfall'))
         
+        validation_error = validate_crop_inputs({
+            "N": n,
+            "P": p,
+            "K": k,
+            "temperature": temp,
+            "humidity": hum,
+            "ph": ph,
+            "rainfall": rain,
+        })
+
+        if validation_error:
+            return jsonify({"error": validation_error}), 400
+
+        
         # Predict using trained model
         input_data = [[n, p, k, temp, hum, ph, rain]]
-        prediction = model.predict(input_data)[0]
-        
-        # Get probability/confidence
+        prediction = model.classes_[np.argmax(model.predict_proba(input_data)[0])]
+
+        # Get probabilities for all crop classes
         probabilities = model.predict_proba(input_data)[0]
+        top_indices = np.argsort(probabilities)[::-1][:3]
+
+        # Prepare Top 3 crop recommendations
+        top_crops = []
+
+        for idx in top_indices:
+            crop_name = model.classes_[idx]
+            crop_confidence = round(float(probabilities[idx]) * 100, 2)
+
+            crop_suitability = calculate_suitability(
+                crop_name, n, p, k, temp, hum, ph, rain
+            )
+
+            top_crops.append({
+                "crop": str(crop_name).capitalize(),
+                "confidence": crop_confidence,
+                "suitability_score": (
+                    crop_suitability["overall_score"]
+                    if crop_suitability else 100.0
+                )
+            })
+
+            # Keep the existing primary crop and confidence
         class_idx = np.where(model.classes_ == prediction)[0][0]
-        confidence = round(probabilities[class_idx] * 100, 2)
+        confidence = round(float(probabilities[class_idx]) * 100, 2)
+
         
-        # Get suitability details of the recommended crop
+            # Get suitability details of the recommended crop
         suitability_details = calculate_suitability(prediction, n, p, k, temp, hum, ph, rain)
         
         return jsonify({
             'crop': prediction.capitalize(),
             'confidence': confidence,
             'suitability_score': suitability_details['overall_score'] if suitability_details else 100.0,
-            'details': suitability_details['details'] if suitability_details else {}
+            'details': suitability_details['details'] if suitability_details else {},
+            'top_crops': top_crops
         })
         
     except Exception as e:
@@ -229,6 +291,19 @@ def api_suitability():
         hum = float(data.get('humidity'))
         ph = float(data.get('ph'))
         rain = float(data.get('rainfall'))
+
+        validation_error = validate_crop_inputs({
+            "N": n,
+            "P": p,
+            "K": k,
+            "temperature": temp,
+            "humidity": hum,
+            "ph": ph,
+            "rainfall": rain,
+        })
+
+        if validation_error:
+            return jsonify({"error": validation_error}), 400
         
         result = calculate_suitability(crop_name, n, p, k, temp, hum, ph, rain)
         if not result:
@@ -464,5 +539,4 @@ def api_compare_crops():
     })
 
 if __name__ == '__main__':
-    load_resources()
     app.run(debug=True, port=5000)
