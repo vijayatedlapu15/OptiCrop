@@ -63,7 +63,7 @@ def _resolve_resource_path(*candidates):
 
 MODEL_PATH = _resolve_resource_path(os.path.join("models", "crop_recommendation_model.pkl"), "crop_recommendation_model.pkl")
 STATS_PATH = _resolve_resource_path(os.path.join("config", "crop_stats.json"), "crop_stats.json")
-DATA_PATH = _resolve_resource_path(os.path.join("datasets", "Crop_recommendation.csv"), "Crop_recommendation.csv")
+DATA_PATH = _resolve_resource_path(os.path.join("datasets", "Crop_recommendation.csv"), os.path.join("config", "Crop_recommendation.csv"), "Crop_recommendation.csv")
 EVAL_PATH = _resolve_resource_path(os.path.join("config", "evaluation_metrics.json"), "evaluation_metrics.json")
 
 # Global variables for models and stats

@@ -1,26 +1,48 @@
-# Vercel deployment - exclude large/unnecessary files
-datasets/
+# OptiCrop Production Vercel Ignore Configuration
+
+# 1. Backups & Legacy Directories
+_backup_pre_reorg/
 backup/
-training_output/
-__pycache__/
-.pytest_cache/
-.git/
-.vercel/
-venv/
+*.bak
+
+# 2. Local Virtual Environments
 .venv/
+.venv-1/
+venv/
 env/
-*.pth
-*.zip
+.env
+
+# 3. Version Control & Caches
+.git/
+.gitignore
+.vercel/
+.sf/
+.pytest_cache/
+__pycache__/
 *.pyc
 *.pyo
+
+# 4. Large Raw Training Datasets (2.5+ GB) - NOT needed for production inference
+backend/datasets/plantvillage/
+backend/datasets/_temp_extract/
+datasets/plantvillage/
+datasets/_temp_extract/
+**/plantvillage/**
+**/_temp_extract/**
+
+# 5. Offline Training Code & Checkpoints
+backend/training/
+training/
+training_output/
+*.pth
+*.zip
 *.onnx.data
-*.bak
 *.log
-scratch/
 .coverage
 htmlcov/
+scratch/
 
-# Training & dev scripts (not needed in production)
+# 6. Development & Training Scripts
 train_disease_model.py
 download_plantvillage.py
 download_per_class.py
@@ -38,7 +60,12 @@ test_enhancements.py
 test_reliability.py
 tests.py
 
-# Dev documentation & scratch files
+# 7. Test Suite (Run in CI/pre-deployment, not needed in production container)
+tests/
+test*/**
+
+# 8. Documentation & Internal Markdown
+docs/
 IMPLEMENTATION_STATUS.md
 *.md
 !README.md
