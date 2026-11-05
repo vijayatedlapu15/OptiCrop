@@ -4,8 +4,7 @@
     "opticrop": {
       "root": ".",
       "framework": "flask",
-      "entrypoint": "run:app",
-      "maxDuration": 30
+      "entrypoint": "run:app"
     }
   },
   "rewrites": [
