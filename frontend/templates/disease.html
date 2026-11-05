@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-title-section animate-fade-in">
+    <div class="title-with-actions">
+        <div>
+            <h2><i class="fa-solid fa-leaf"></i> Scenario 4: AI Plant Disease Detection</h2>
+            <p>Diagnose foliar plant pathologies using computer-vision deep learning. Upload a close-up image of a crop leaf to receive real-time disease identification, symptoms breakdown, and agronomic management guidance.</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-secondary" id="btn-open-catalog">
+                <i class="fa-solid fa-list-check"></i> Supported Classes (38)
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="interactive-grid animate-slide-up">
+    <!-- Upload Panel -->
+    <div class="form-panel glass-card">
+        <div class="card-header">
+            <h3>Leaf Image Upload</h3>
+            <span class="badge">MobileNetV2 Vision Engine</span>
+        </div>
+
+        <!-- Plant Species Selection Filter -->
+        <div class="form-group species-select-group" style="margin-bottom: 16px;">
+            <label for="disease-plant-select" class="form-label" style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+                <span><i class="fa-solid fa-seedling text-primary"></i> Target Plant Species (Recommended)</span>
+                <span class="badge" style="font-size: 10px; padding: 2px 8px;">14 Supported Crops</span>
+            </label>
+            <select id="disease-plant-select" name="selected_plant" class="form-select custom-select" style="width: 100%; padding: 10px 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); border-radius: var(--radius-sm); color: var(--text-main); font-size: 13px;">
+                <option value="">Auto-detect (Infer plant & pathology across all 38 classes)</option>
+                <option value="Apple">Apple (Malus domestica) — 4 classes</option>
+                <option value="Blueberry">Blueberry (Vaccinium corymbosum) — 1 class</option>
+                <option value="Cherry">Cherry (Prunus avium / cerasus) — 2 classes</option>
+                <option value="Corn (Maize)">Corn / Maize (Zea mays) — 4 classes</option>
+                <option value="Grape">Grape (Vitis vinifera) — 4 classes</option>
+                <option value="Orange">Orange / Citrus (Citrus sinensis) — 1 class</option>
+                <option value="Peach">Peach (Prunus persica) — 2 classes</option>
+                <option value="Pepper (Bell)">Pepper, Bell (Capsicum annuum) — 2 classes</option>
+                <option value="Potato">Potato (Solanum tuberosum) — 3 classes</option>
+                <option value="Raspberry">Raspberry (Rubus idaeus) — 1 class</option>
+                <option value="Soybean">Soybean (Glycine max) — 1 class</option>
+                <option value="Squash">Squash (Cucurbita pepo) — 1 class</option>
+                <option value="Strawberry">Strawberry (Fragaria × ananassa) — 2 classes</option>
+                <option value="Tomato">Tomato (Solanum lycopersicum) — 10 classes</option>
+                <option value="Pear">Pear (Pyrus communis) — [Unsupported Crop / Out of Scope]</option>
+                <option value="unsupported">Other / Unsupported Crop (e.g. Rice, Wheat, Cotton...)</option>
+            </select>
+            <p class="form-text-hint" style="font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.4;">
+                <i class="fa-solid fa-circle-info"></i> Selecting a species enables host-compatibility verification. <em>Note: Selecting a species does not itself verify that the uploaded image belongs to that species.</em>
+            </p>
+            <div id="unsupported-plant-warning" class="unsupported-alert-box" style="display: none; margin-top: 10px; padding: 10px 12px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; font-size: 12px; color: #fca5a5; line-height: 1.4;">
+                <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i>
+                <span><strong>Taxonomy Boundary Notice:</strong> OptiCrop's vision model only supports the 14 species listed above. Closed-set classifiers will assign inaccurate labels to unsupported plants (e.g., Pear, Pear Rust, Rice, Wheat). Consult an agricultural extension specialist for unsupported crops.</span>
+            </div>
+        </div>
+
+        <!-- Drag and Drop Dropzone -->
+        <div class="upload-dropzone" id="disease-dropzone">
+            <input type="file" id="disease-file-input" name="image" accept=".jpg,.jpeg,.png,.webp" style="display: none;">
+            <div class="dropzone-content" id="dropzone-prompt">
+                <div class="upload-icon-circle">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h4>Drag and drop leaf photo here</h4>
+                <p>or <span class="browse-link" id="browse-files-btn">browse your computer</span></p>
+                <span class="dropzone-hint">Supports JPG, JPEG, PNG, WebP (Max 10 MB)</span>
+            </div>
+        </div>
+
+        <!-- Image Preview Area -->
+        <div class="preview-container" id="disease-preview-container" style="display: none;">
+            <div class="preview-card">
+                <div class="preview-image-box">
+                    <img id="disease-preview-img" src="" alt="Selected leaf preview">
+                </div>
+                <div class="preview-meta">
+                    <h4 id="preview-filename">filename.jpg</h4>
+                    <p class="text-muted" id="preview-filesize">Size</p>
+                    <div class="preview-actions" style="margin-top: 14px;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="remove-image-btn">
+                            <i class="fa-solid fa-xmark"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="supported-crops-hint" style="margin-top: 14px;">
+                <span class="hint-label">14 Supported Crop Species:</span>
+                <div class="crop-coverage-tags">
+                    <span class="mini-tag">Apple</span>
+                    <span class="mini-tag">Blueberry</span>
+                    <span class="mini-tag">Cherry</span>
+                    <span class="mini-tag">Corn (Maize)</span>
+                    <span class="mini-tag">Grape</span>
+                    <span class="mini-tag">Orange</span>
+                    <span class="mini-tag">Peach</span>
+                    <span class="mini-tag">Bell Pepper</span>
+                    <span class="mini-tag">Potato</span>
+                    <span class="mini-tag">Raspberry</span>
+                    <span class="mini-tag">Soybean</span>
+                    <span class="mini-tag">Squash</span>
+                    <span class="mini-tag">Strawberry</span>
+                    <span class="mini-tag">Tomato</span>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="button" class="submit-btn" id="btn-analyze-disease">
+                <i class="fa-solid fa-microscope"></i> Detect Plant Disease
+            </button>
+        </div>
+
+        <!-- Before image: crop coverage hint + CTA -->
+        <div id="disease-pre-upload-info" class="supported-crops-hint" style="margin-top: 18px;">
+            <span class="hint-label">14 Supported Crop Species:</span>
+            <div class="crop-coverage-tags">
+                <span class="mini-tag">Apple</span>
+                <span class="mini-tag">Blueberry</span>
+                <span class="mini-tag">Cherry</span>
+                <span class="mini-tag">Corn (Maize)</span>
+                <span class="mini-tag">Grape</span>
+                <span class="mini-tag">Orange</span>
+                <span class="mini-tag">Peach</span>
+                <span class="mini-tag">Bell Pepper</span>
+                <span class="mini-tag">Potato</span>
+                <span class="mini-tag">Raspberry</span>
+                <span class="mini-tag">Soybean</span>
+                <span class="mini-tag">Squash</span>
+                <span class="mini-tag">Strawberry</span>
+                <span class="mini-tag">Tomato</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostic Results / Empty State Panel -->
+    <div class="result-panel glass-card empty-state" id="disease-empty-state">
+        <div class="empty-state-content text-center">
+            <i class="fa-solid fa-camera empty-icon"></i>
+            <h3>Awaiting Leaf Image</h3>
+            <p>Select or drag-and-drop a clear image of a plant leaf on the left. The MobileNetV2 neural network will evaluate foliar pathology patterns.</p>
+            <ul class="model-specs-list" style="text-align:left;margin-top:20px;list-style:none;padding:0;">
+                <li><i class="fa-solid fa-microchip text-primary"></i> Architecture: MobileNetV2 (ONNX Runtime Engine)</li>
+                <li><i class="fa-solid fa-database text-primary"></i> Benchmark Dataset: PlantVillage Benchmark</li>
+                <li><i class="fa-solid fa-layer-group text-primary"></i> Taxonomy: 14 Host Species, 38 Specific Classes</li>
+                <li><i class="fa-solid fa-shield-halved text-primary"></i> Reliability Guards: Multi-Signal Uncertainty &amp; Species Compatibility</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Results card (populated by JS) -->
+    <div class="result-panel glass-card" id="disease-results-card" style="display: none;">
+        <div class="card-header">
+            <h3>Diagnostic Report</h3>
+            <button class="action-btn-small" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+        </div>
+
+        <!-- Google Gemini Vision & Search Grounding Status Indicators -->
+        <div id="disease-api-status-bar" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+            <span class="api-pill" id="pill-gemini-status" style="display: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <i class="fa-brands fa-google"></i> <span id="pill-gemini-text">Google Gemini Connected</span>
+            </span>
+            <span class="api-pill" id="pill-grounding-status" style="display: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; align-items: center; gap: 6px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                <i class="fa-solid fa-earth-americas"></i> <span id="pill-grounding-text">Google Search Grounding Active</span>
+            </span>
+            <span class="api-pill" id="pill-unavailable-status" style="display: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; align-items: center; gap: 6px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">
+                <i class="fa-solid fa-triangle-exclamation"></i> <span id="pill-unavailable-text">Google Verification Unavailable</span>
+            </span>
+        </div>
+
+        <!-- Reliability Status Banner -->
+        <div class="status-banner" id="disease-status-banner" style="margin-bottom: 16px; padding: 12px 16px; border-radius: var(--radius-sm); display: flex; align-items: flex-start; gap: 12px;">
+            <i class="fa-solid fa-circle-check" id="disease-status-icon" style="font-size: 20px; margin-top: 2px;"></i>
+            <div>
+                <h4 id="disease-status-title" style="margin: 0; font-size: 14px; font-weight: 700;">Supported Model Diagnosis</h4>
+                <p id="disease-status-desc" style="margin: 4px 0 0; font-size: 12px; line-height: 1.4; opacity: 0.9;">Prediction verified within supported species and confidence parameters.</p>
+            </div>
+        </div>
+
+        <div class="disease-result-box text-center">
+            <div class="diagnosis-badge-container" style="display:flex; justify-content:center; gap:8px; align-items:center; flex-wrap:wrap;">
+                <span class="severity-badge" id="disease-severity-badge">—</span>
+                <span class="badge" id="disease-tier-badge" style="background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);">CONFIDENCE TIER</span>
+            </div>
+            <h3 class="diag-crop-name" id="disease-result-crop">—</h3>
+            <h2 class="diag-condition-name" id="disease-result-condition">—</h2>
+
+            <!-- Selected Plant vs Predicted Plant Note -->
+            <div id="disease-species-match-note" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
+
+            <!-- Confidence Meter -->
+            <div class="confidence-container" style="margin-top: 15px;">
+                <div class="bar-label">
+                    <span>Model Diagnostic Confidence</span>
+                    <span id="disease-result-confidence">—</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="disease-confidence-fill" style="width: 0%;"></div>
+                </div>
+                <p class="score-caption" style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: left;">
+                    <i class="fa-solid fa-chart-simple"></i> Model confidence represents statistical softmax distribution across 38 closed-set training classes, not guaranteed real-world diagnostic accuracy.
+                </p>
+            </div>
+        </div>
+
+        <!-- Low Confidence / Caution Warning -->
+        <div class="caution-alert-box" id="disease-caution-box" style="display: none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <p id="disease-caution-text">Model confidence is below threshold.</p>
+        </div>
+
+        <!-- Closest Compatible Candidate (shown if species was incompatible) -->
+        <div class="candidate-box-incompatible" id="disease-closest-cand-box" style="display: none; margin-bottom: 16px; padding: 12px 14px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px;">
+            <h5 style="margin: 0 0 4px; font-size: 12px; color: #93c5fd;"><i class="fa-solid fa-magnifying-glass"></i> Closest Hypothesis For Selected Species:</h5>
+            <p id="disease-closest-cand-text" style="margin: 0; font-size: 12px; color: var(--text-main);"></p>
+        </div>
+
+        <!-- Closed-Set Model Artifact Note (shown when status is uncertain/incompatible) -->
+        <div id="disease-unverified-artifact-box" style="display: none; margin-bottom: 16px; padding: 12px 14px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px;">
+            <h5 style="margin: 0 0 4px; font-size: 12px; color: #fbbf24;"><i class="fa-solid fa-microchip"></i> Unverified Closed-Set Model Raw Prediction:</h5>
+            <p id="disease-unverified-artifact-text" style="margin: 0; font-size: 12px; color: var(--text-main); line-height: 1.4;"></p>
+        </div>
+
+        <!-- Independent Visual Verification & Web Corroboration Panel -->
+        <div id="disease-external-verification-box" style="margin-bottom: 16px; padding: 14px 16px; background: rgba(30, 41, 59, 0.4); border: 1px solid var(--panel-border); border-radius: var(--radius-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h5 style="margin: 0; font-size: 13px; font-weight: 700; color: var(--primary);">
+                    <i class="fa-solid fa-eye"></i> Independent Image Assessment &amp; Web Corroboration
+                </h5>
+                <span id="verification-status-tag" class="mini-tag" style="font-size: 10px;">Offline Safe Mode</span>
+            </div>
+            <div id="verification-details-content" style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+                <!-- Populated dynamically by main.js -->
+            </div>
+        </div>
+
+        <!-- Symptoms & Comprehensive Management Guidance Section -->
+        <div class="guidance-section" style="margin-top: 20px;">
+            <!-- Tab Navigation Header -->
+            <div class="disease-management-tabs" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid var(--panel-border); margin-bottom: 16px;">
+                <button type="button" class="btn btn-secondary btn-sm disease-tab-btn active" data-tab="tab-overview" style="font-size: 11px; white-space: nowrap;">
+                    <i class="fa-solid fa-circle-info"></i> Overview &amp; Symptoms
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm disease-tab-btn" data-tab="tab-immediate" style="font-size: 11px; white-space: nowrap;">
+                    <i class="fa-solid fa-bolt"></i> Immediate Action
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm disease-tab-btn" data-tab="tab-spread" style="font-size: 11px; white-space: nowrap;">
+                    <i class="fa-solid fa-shield-virus"></i> Spread Prevention
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm disease-tab-btn" data-tab="tab-treatment" style="font-size: 11px; white-space: nowrap;">
+                    <i class="fa-solid fa-hand-holding-medical"></i> Verified Treatment
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm disease-tab-btn" data-tab="tab-recovery" style="font-size: 11px; white-space: nowrap;">
+                    <i class="fa-solid fa-list-check"></i> Recovery &amp; Checklist
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm disease-tab-btn" data-tab="tab-sources" style="font-size: 11px; white-space: nowrap;">
+                    <i class="fa-solid fa-book-bookmark"></i> Sources &amp; Gaps
+                </button>
+            </div>
+
+            <!-- Tab 1: Overview & Symptoms -->
+            <div class="disease-tab-pane active" id="tab-overview">
+                <!-- Pathogen Taxonomy Banner -->
+                <div id="disease-pathogen-banner" style="display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--panel-border); margin-bottom: 14px;">
+                    <div>
+                        <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Pathogen Type</span>
+                        <div id="disease-pathogen-type" style="font-weight: 700; font-size: 13px; color: var(--primary);">--</div>
+                    </div>
+                    <div style="border-left: 1px solid var(--panel-border); padding-left: 12px;">
+                        <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Causal Organism</span>
+                        <div id="disease-causal-agent" style="font-style: italic; font-size: 13px; color: var(--text-main);">--</div>
+                    </div>
+                </div>
+
+                <div class="guidance-card">
+                    <h4><i class="fa-solid fa-magnifying-glass"></i> Observed Foliar Symptoms</h4>
+                    <p id="disease-symptoms" class="guidance-text">—</p>
+                </div>
+
+                <!-- Alternate Candidates -->
+                <div class="guidance-card candidates-card">
+                    <h4><i class="fa-solid fa-chart-pie"></i> Alternate Diagnostic Hypotheses</h4>
+                    <div id="top-candidates-container">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <!-- Model Limitations Card -->
+                <div class="guidance-card limitations-card" style="border-left: 3px solid #64748b;">
+                    <h4><i class="fa-solid fa-triangle-exclamation text-muted"></i> Model Architecture &amp; Closed-Set Scope</h4>
+                    <ul style="font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 8px 0 0; padding-left: 18px;">
+                        <li><strong>Closed-Set Boundary:</strong> The classifier is trained strictly on 14 host crops and 38 conditions from the PlantVillage dataset.</li>
+                        <li><strong>Unsupported Plants &amp; Pathologies:</strong> Foliage from crops outside this set (e.g., Pear, Quince, Rice, Wheat, Cotton) or unrepresented conditions (such as European Pear Rust, <em>Gymnosporangium sabinae</em>) cannot be diagnosed and will trigger out-of-distribution uncertainty.</li>
+                        <li><strong>Species Verification:</strong> Specifying a plant species checks model compatibility but does not independently verify that the image belongs to that species.</li>
+                        <li><strong>Advisory Nature:</strong> Optical foliar assessment is an agronomic screening tool, not a substitute for laboratory phytopathological assays (PCR, ELISA, or culture isolation).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tab 2: Immediate Actions -->
+            <div class="disease-tab-pane" id="tab-immediate" style="display: none;">
+                <div class="guidance-card" style="border-left: 3px solid #f59e0b;">
+                    <h4><i class="fa-solid fa-triangle-exclamation text-warning"></i> What To Do First Upon Suspected Detection</h4>
+                    <ul id="disease-immediate-list" class="care-list actionable-care-list" style="margin-top: 10px;">
+                        <!-- Filled dynamically -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tab 3: Spread Prevention & Cultural Care -->
+            <div class="disease-tab-pane" id="tab-spread" style="display: none;">
+                <div class="guidance-card">
+                    <h4><i class="fa-solid fa-shield-virus text-primary"></i> Reducing Transmission to Healthy Plants</h4>
+                    <ul id="disease-spread-list" class="care-list actionable-care-list" style="margin-top: 10px;">
+                        <!-- Filled dynamically -->
+                    </ul>
+                </div>
+
+                <div class="guidance-card">
+                    <h4><i class="fa-solid fa-seedling text-primary"></i> Cultural &amp; Agronomic Management</h4>
+                    <p id="disease-prevention" class="guidance-text">—</p>
+                    <ul id="disease-cultural-list" class="care-list actionable-care-list" style="margin-top: 10px;">
+                        <!-- Filled dynamically -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tab 4: Verified Treatment Options -->
+            <div class="disease-tab-pane" id="tab-treatment" style="display: none;">
+                <div class="guidance-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h4 style="margin: 0;"><i class="fa-solid fa-hand-holding-medical"></i> Actionable Care &amp; Field Management</h4>
+                        <span id="treatment-status-tag" class="mini-tag" style="font-size: 10px;">Guidance Active</span>
+                    </div>
+
+                    <div id="disease-treatment-withheld-alert" style="display: none; padding: 12px 14px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #fcd34d; line-height: 1.5;">
+                        <i class="fa-solid fa-shield-halved" style="margin-right: 6px;"></i>
+                        <span><strong>Definitive Chemical Treatment Withheld:</strong> Disease-specific chemical recommendations (fungicides, bactericides) are withheld for unconfirmed, uncertain, or species-incompatible predictions to protect crop safety. Follow cultural hygiene and obtain expert in-person confirmation.</span>
+                    </div>
+
+                    <!-- Preserved Legacy Care List Container -->
+                    <ul id="disease-care-list" class="care-list actionable-care-list">
+                        <!-- Filled dynamically -->
+                    </ul>
+
+                    <!-- Structured Modalities -->
+                    <div id="disease-treatment-structured" style="margin-top: 16px;">
+                        <!-- Cultural Remedies -->
+                        <div style="margin-bottom: 12px;">
+                            <h5 style="margin: 0 0 6px; font-size: 12px; color: #6ee7b7;"><i class="fa-solid fa-leaf"></i> Cultural Controls:</h5>
+                            <ul id="treatment-cultural-list" style="font-size: 12px; margin: 0; padding-left: 18px; line-height: 1.5;"></ul>
+                        </div>
+                        <!-- Biological Options -->
+                        <div style="margin-bottom: 12px;">
+                            <h5 style="margin: 0 0 6px; font-size: 12px; color: #93c5fd;"><i class="fa-solid fa-bacterium"></i> Biological Controls:</h5>
+                            <ul id="treatment-bio-list" style="font-size: 12px; margin: 0; padding-left: 18px; line-height: 1.5;"></ul>
+                        </div>
+                        <!-- Chemical Options -->
+                        <div id="treatment-chemical-container" style="margin-bottom: 12px;">
+                            <h5 style="margin: 0 0 6px; font-size: 12px; color: #fca5a5;"><i class="fa-solid fa-flask"></i> Verified Chemical Active Ingredients:</h5>
+                            <ul id="treatment-chem-list" style="font-size: 12px; margin: 0; padding-left: 18px; line-height: 1.5;"></ul>
+                        </div>
+                        <!-- Safety Warnings -->
+                        <div id="treatment-warnings-container" style="padding: 10px 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px;">
+                            <h5 style="margin: 0 0 4px; font-size: 11px; color: #f87171; text-transform: uppercase;"><i class="fa-solid fa-triangle-exclamation"></i> Safety, Pollinator &amp; Harvest Warnings:</h5>
+                            <ul id="treatment-warnings-list" style="font-size: 11px; margin: 0; padding-left: 16px; line-height: 1.4; color: #fca5a5;"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Recovery & Interactive Checklist -->
+            <div class="disease-tab-pane" id="tab-recovery" style="display: none;">
+                <!-- Practical Session Checklist -->
+                <div class="guidance-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h4 style="margin: 0;"><i class="fa-solid fa-clipboard-check text-primary"></i> Practical Field Action Checklist</h4>
+                        <span id="checklist-progress-badge" class="badge" style="font-size: 10px;">0 / 5 Completed</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                        Mark operational containment steps as completed during your field session:
+                    </p>
+                    <div id="recovery-checklist-container" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Interactive checkboxes filled by JS -->
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px; font-style: italic;">
+                        * This operational checklist tracks management workflow during this session. It does not measure or guarantee physiological plant recovery without in-field inspection.
+                    </p>
+                </div>
+
+                <!-- Recovery Monitoring Signs -->
+                <div class="guidance-card">
+                    <h4><i class="fa-solid fa-binoculars text-primary"></i> What Signs To Monitor (Days 3 - 14)</h4>
+                    <ul id="disease-recovery-signs-list" class="care-list actionable-care-list" style="margin-top: 10px;">
+                        <!-- Filled dynamically -->
+                    </ul>
+                </div>
+
+                <!-- When to Seek Expert Help -->
+                <div class="guidance-card" style="border-left: 3px solid #3b82f6;">
+                    <h4><i class="fa-solid fa-user-doctor text-primary"></i> When to Contact Extension / KVK / Pathologist</h4>
+                    <p id="disease-expert-criteria" class="guidance-text">—</p>
+                </div>
+            </div>
+
+            <!-- Tab 6: Scientific References & Evidence Gaps -->
+            <div class="disease-tab-pane" id="tab-sources" style="display: none;">
+                <div class="guidance-card">
+                    <h4><i class="fa-solid fa-book-open-reader text-primary"></i> Traceable Scientific &amp; Extension References</h4>
+                    <div id="disease-references-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <div class="guidance-card" style="border-left: 3px solid #64748b;">
+                    <h4><i class="fa-solid fa-magnifying-glass-chart text-muted"></i> Preventive Measures for Next Crop Cycle</h4>
+                    <ul id="disease-next-cycle-list" class="care-list actionable-care-list" style="margin-top: 10px;">
+                        <!-- Filled dynamically -->
+                    </ul>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary full-width-btn" id="btn-test-another" style="margin-top: 16px;" onclick="location.reload()">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Test Another Leaf Image
+            </button>
+
+            <!-- AI Disclaimer -->
+            <p class="ai-disclaimer" id="disease-disclaimer" style="display: none; margin-top: 14px; font-size: 11px; color: var(--text-muted); line-height: 1.5; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--panel-border);">
+                <i class="fa-solid fa-info-circle"></i> AI disclaimer loading...
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Supported Classes Catalog -->
+<div class="modal-overlay" id="disease-catalog-modal" style="display: none;">
+    <div class="modal-window">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-book-medical"></i> Benchmark Plant Pathology Classes (38)</h3>
+            <button class="btn-close-modal" id="btn-close-catalog"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-intro" style="margin-bottom:16px;color:var(--text-muted);font-size:13px;">
+                OptiCrop's computer vision system is evaluated against the peer-reviewed PlantVillage dataset across 38 distinct crop-pathology pairs:
+            </p>
+            <div class="catalog-grid" id="catalog-grid">
+                <!-- Filled dynamically by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

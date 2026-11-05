@@ -35,6 +35,7 @@ query_app.py
 test_app.py
 test_disease_fix.py
 test_enhancements.py
+test_reliability.py
 tests.py
 
 # Dev documentation & scratch files

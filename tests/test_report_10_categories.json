@@ -1,0 +1,151 @@
+[
+  {
+    "category": "1. Potato Early Blight",
+    "image_file": "potato_early_blight.jpg",
+    "ground_truth": "Potato (Solanum tuberosum) with Early Blight (Alternaria solani)",
+    "gemini_plant": "Potato (Solanum tuberosum)",
+    "gemini_disease": "Early Blight (Alternaria solani)",
+    "search_citations": [
+      "Early Blight of Potato \u2014 University of Minnesota Extension (https://extension.umn.edu/disease-management/early-blight-potato)",
+      "Potato Early Blight \u2014 Penn State Extension (https://extension.psu.edu/potato-early-blight)"
+    ],
+    "local_ml_prediction": "Potato \u2014 Early Blight (Alternaria solani) (100.0%)",
+    "final_status": "CORROBORATED",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Evidence-based assessment aligned with ground truth."
+  },
+  {
+    "category": "2. Tomato Early Blight",
+    "image_file": "tomato_early_blight.jpg",
+    "ground_truth": "Tomato (Solanum lycopersicum) with Early Blight (Alternaria solani)",
+    "gemini_plant": "Tomato (Solanum lycopersicum)",
+    "gemini_disease": "Early Blight (Alternaria solani)",
+    "search_citations": [
+      "Early Blight on Tomato \u2014 UC IPM (https://ipm.ucanr.edu/PMG/GARDEN/VEGES/DISEASES/tomearlyblight.html)",
+      "Tomato Early Blight \u2014 Cornell Vegetable MD Online (https://vegetablemdonline.ppath.cornell.edu/factsheets/Tomato_EarlyBlt.htm)"
+    ],
+    "local_ml_prediction": "Tomato \u2014 Early Blight (Alternaria solani) (72.4%)",
+    "final_status": "CORROBORATED",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Evidence-based assessment aligned with ground truth."
+  },
+  {
+    "category": "3. Apple Scab",
+    "image_file": "apple_scab.jpg",
+    "ground_truth": "Apple (Malus domestica) with Apple Scab (Venturia inaequalis)",
+    "gemini_plant": "Apple (Malus domestica)",
+    "gemini_disease": "Apple Scab (Venturia inaequalis)",
+    "search_citations": [
+      "Apple Scab \u2014 Penn State Extension (https://extension.psu.edu/apple-scab)",
+      "Apple Scab in the Home Orchard \u2014 Purdue Extension (https://www.extension.purdue.edu/extmedia/BP/BP-1-W.pdf)"
+    ],
+    "local_ml_prediction": "Apple \u2014 Apple Scab (Venturia inaequalis) (99.95%)",
+    "final_status": "CORROBORATED",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Evidence-based assessment aligned with ground truth."
+  },
+  {
+    "category": "4. Rose Black Spot",
+    "image_file": "rose_black_spot.jpg",
+    "ground_truth": "Rose (Rosa spp.) with Black Spot (Diplocarpon rosae) [Outside 14 Crops]",
+    "gemini_plant": "Rose (Rosa spp.)",
+    "gemini_disease": "Black Spot (Diplocarpon rosae)",
+    "search_citations": [
+      "Black Spot of Roses \u2014 Clemson Cooperative Extension (https://hgic.clemson.edu/factsheet/black-spot-of-roses/)"
+    ],
+    "local_ml_prediction": "Corn (Maize) \u2014 Common Rust (Puccinia sorghi) (84.05%)",
+    "final_status": "UNSUPPORTED",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Unsupported Plant Species: Unsupported plant species \u2014 unable to verify disease. Independent visual analysis identified this as Rose (Rosa spp.). Candidate condition under investigation: Black Spot (Diplocarpon rosae). Rose is outside OptiCrop's 14 supported agricultural crops. Pathogen is Diplocarpon rosae."
+  },
+  {
+    "category": "5. Maple Tar Spot",
+    "image_file": "problem_maple_tar_spots.jpeg",
+    "ground_truth": "Maple (Acer spp.) with Tar Spot (Rhytisma acerinum) [Outside 14 Crops]",
+    "gemini_plant": "Maple (Acer spp.)",
+    "gemini_disease": "Maple Tar Spot (Rhytisma acerinum)",
+    "search_citations": [
+      "Tar Spot on Maple \u2014 Penn State Extension (https://extension.psu.edu/tar-spot-on-maple)",
+      "Tar Spot on Trees \u2014 UMN Extension (https://extension.umn.edu/plant-diseases/tar-spot-trees)"
+    ],
+    "local_ml_prediction": "Corn (Maize) \u2014 Gray Leaf Spot (Cercospora zeae-maydis) (94.57%)",
+    "final_status": "UNSUPPORTED",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Unsupported Plant Species: Unsupported plant species \u2014 unable to verify disease. Independent visual analysis identified this as Maple (Acer spp.). Candidate condition under investigation: Maple Tar Spot (Rhytisma acerinum). Acer palmate broadleaf with characteristic Rhytisma stroma. Incompatible with Corn grass."
+  },
+  {
+    "category": "6. Pear Rust",
+    "image_file": "problem_pear_orange_rust.png",
+    "ground_truth": "European Pear (Pyrus communis) with Pear Rust (Gymnosporangium sabinae) [Outside 14 Crops]",
+    "gemini_plant": "Pear (Pyrus communis)",
+    "gemini_disease": "European Pear Rust (Gymnosporangium sabinae)",
+    "search_citations": [
+      "Pear Rust \u2014 Penn State Extension (https://extension.psu.edu/pear-rust)",
+      "European Pear Rust \u2014 RHS (https://www.rhs.org.uk/disease/pear-rust)"
+    ],
+    "local_ml_prediction": "Corn (Maize) \u2014 Gray Leaf Spot (Cercospora zeae-maydis) (95.77%)",
+    "final_status": "UNSUPPORTED",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Unsupported Plant Species: Unsupported plant species \u2014 unable to verify disease. Independent visual analysis identified this as Pear (Pyrus communis). Candidate condition under investigation: European Pear Rust (Gymnosporangium sabinae). Gymnosporangium blister pustules on Pyrus broadleaf. Conflicting with Corn grass."
+  },
+  {
+    "category": "7. Ganesha idol",
+    "image_file": "ganesha_idol.jpeg",
+    "ground_truth": "Religious statue / terracotta idol [Non-Plant Object]",
+    "gemini_plant": "Non-Plant Object",
+    "gemini_disease": "None (Non-plant object)",
+    "search_citations": [],
+    "local_ml_prediction": "None (Bypassed due to Stage 1 validation rejection)",
+    "final_status": "REJECTED (Non-Plant Object)",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Invalid image: visual content appears to be a religious idol, statue, or non-plant object, lacking foliar leaf structure and natural venation. Please upload a clear close-up photo of a crop leaf."
+  },
+  {
+    "category": "8. Green artificial objects",
+    "image_file": "green_artificial_object.png",
+    "ground_truth": "Synthetic plastic green block [Non-Plant Object]",
+    "gemini_plant": "Non-Plant Object",
+    "gemini_disease": "None (Inorganic synthetic artifact)",
+    "search_citations": [],
+    "local_ml_prediction": "None (Bypassed due to Stage 1 validation rejection)",
+    "final_status": "REJECTED (Non-Plant Object)",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Invalid image: visual content appears to be a religious idol, statue, or non-plant object, lacking foliar leaf structure and natural venation. Please upload a clear close-up photo of a crop leaf."
+  },
+  {
+    "category": "9. Healthy leaves",
+    "image_file": "healthy_leaf.jpg",
+    "ground_truth": "Tomato (Solanum lycopersicum) healthy leaf [Supported Healthy]",
+    "gemini_plant": "Tomato (Solanum lycopersicum)",
+    "gemini_disease": "Healthy Foliage",
+    "search_citations": [
+      "Growing Tomatoes in Home Gardens \u2014 UMN Extension (https://extension.umn.edu/vegetables/growing-tomatoes)"
+    ],
+    "local_ml_prediction": "Tomato \u2014 Healthy Foliage (100.0%)",
+    "final_status": "CORROBORATED",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Evidence-based assessment aligned with ground truth."
+  },
+  {
+    "category": "10. Blurry or unclear images",
+    "image_file": "blurry_unclear_leaf.jpg",
+    "ground_truth": "Heavily blurred leaf [Indistinct foliar resolution]",
+    "gemini_plant": "Uncertain Plant",
+    "gemini_disease": "Uncertain disease condition",
+    "search_citations": [],
+    "local_ml_prediction": "Corn (Maize) \u2014 Healthy Foliage (93.61%)",
+    "final_status": "UNCERTAIN",
+    "treatment_withheld": true,
+    "supported_by_evidence": true,
+    "notes": "Inconclusive \u2014 please consult an agricultural expert. Image is blurry, occluded, or foliar symptoms lack diagnostic resolution."
+  }
+]

@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-title-section animate-fade-in">
+    <h2><i class="fa-solid fa-gauge-high"></i> Scenario 2: Crop Suitability & Climate Assessment</h2>
+    <p>Assess if current environmental and soil conditions are suitable for a specific crop. Enter a target crop and
+        local parameters to receive an alignment profile and custom agricultural correction guides.</p>
+</div>
+
+<div class="interactive-grid animate-slide-up">
+    <!-- Form Panel -->
+    <div class="form-panel glass-card">
+        <div class="card-header">
+            <h3>Crop and Environment Settings</h3>
+            <span class="badge">Assessment Engine v1.0</span>
+        </div>
+
+        <form id="suitability-form" class="crop-form">
+            <details class="input-guide-panel">
+                <summary>
+                    <strong>How do I get these values?</strong>
+                    <span>Click to understand each input</span>
+                </summary>
+
+                <div class="input-guide-content">
+                    <h4>Nitrogen (N), Phosphorus (P), Potassium (K)</h4>
+                    <p>These values are available in your soil-testing laboratory report.</p>
+
+                    <h4>Soil pH</h4>
+                    <p>Check your soil-test report or use a properly calibrated pH meter.</p>
+
+                    <h4>Temperature and Humidity</h4>
+                    <p>Use a trusted local weather source. Current weather may not represent the whole growing season.
+                    </p>
+
+                    <h4>Rainfall</h4>
+                    <p>Use the rainfall period and units expected by your model. Do not substitute today's rainfall for
+                        seasonal rainfall.</p>
+
+                    <p><strong>Important:</strong> Use the correct units and don't guess missing values.</p>
+                </div>
+            </details>
+            <!-- Crop Selector -->
+            <div class="form-group select-group">
+                <label for="select-crop"><i class="fa-solid fa-wheat-awn"></i> Target Crop to Evaluate</label>
+                <select id="select-crop" name="crop" required>
+                    <option value="" disabled selected>-- Select a target crop --</option>
+                    {% for crop in crops %}
+                    <option value="{{ crop }}">{{ crop.capitalize() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Soil Nutrients Row -->
+            <h4 class="form-subheader"><i class="fa-solid fa-flask"></i> Soil Macronutrients (mg/kg)</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="input-n">
+                        Nitrogen (N)
+                        <button type="button" class="info-icon" onclick="showInputInfo('nitrogen')"
+                            title="About Nitrogen" aria-label="Information about Nitrogen">i</button>
+                    </label>
+                    <input type="number" id="input-n" name="N" min="0" max="150" placeholder="e.g. 60" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-n" min="0" max="150" value="60">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-p">
+                        Phosphorous (P)
+                        <button type="button" class="info-icon" onclick="showInputInfo('phosphorus')"
+                            title="About Phosphorus" aria-label="Information about Phosphorus">i</button>
+                    </label>
+                    <input type="number" id="input-p" name="P" min="5" max="150" placeholder="e.g. 50" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-p" min="5" max="150" value="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-k">
+                        Potassium (K)
+                        <button type="button" class="info-icon" onclick="showInputInfo('potassium')"
+                            title="About Potassium" aria-label="Information about Potassium">i</button>
+                    </label>
+                    <input type="number" id="input-k" name="K" min="5" max="210" placeholder="e.g. 45" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-k" min="5" max="210" value="45">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Climate and pH Row -->
+            <div class="climate-subheader-row">
+                <h4 class="form-subheader"><i class="fa-solid fa-cloud-sun"></i> Climatic Conditions</h4>
+                <!-- Live Weather Tool -->
+                <div class="live-weather-toggle">
+                    <button type="button" class="weather-autofill-btn" id="btn-toggle-weather-box">
+                        <i class="fa-solid fa-cloud-sun"></i> Auto-fill from Live Weather
+                    </button>
+                </div>
+            </div>
+
+            <!-- Expandable Live Weather Fetcher Box -->
+            <div class="weather-fetcher-box" id="weather-fetcher-box" style="display: none;">
+                <div class="weather-box-input-group">
+                    <input type="text" id="weather-city-input"
+                        placeholder="Enter city (e.g. Hyderabad, Fresno, Nairobi)" class="styled-input-small">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-fetch-weather">
+                        <i class="fa-solid fa-satellite-dish"></i> Fetch Open-Meteo
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-fetch-gps-weather" title="Detect Current GPS Location">
+                        <i class="fa-solid fa-location-crosshairs"></i> Current Location
+                    </button>
+                </div>
+                <div class="weather-status-msg" id="weather-status-msg" style="display: none;"></div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="input-temp">
+                        Temperature (°C)
+                        <button type="button" class="info-icon" onclick="showInputInfo('temperature')"
+                            title="About Temperature" aria-label="Information about Temperature">i</button>
+                        <span class="label-info">5 - 50 °C</span>
+                    </label>
+                    <input type="number" id="input-temp" name="temperature" min="5" max="50" step="0.1"
+                        placeholder="e.g. 25" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-temp" min="5" max="50" step="0.5"
+                            value="25">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-hum">
+                        Humidity (%)
+                        <button type="button" class="info-icon" onclick="showInputInfo('humidity')"
+                            title="About Humidity" aria-label="Information about Humidity">i</button>
+                        <span class="label-info">10 - 100%</span>
+                    </label>
+                    <input type="number" id="input-hum" name="humidity" min="10" max="100" step="0.1"
+                        placeholder="e.g. 70" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-hum" min="10" max="100" value="70">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="input-ph">
+                        Soil pH
+                        <button type="button" class="info-icon" onclick="showInputInfo('ph')" title="About Soil pH"
+                            aria-label="Information about Soil pH">i</button>
+                    </label>
+                    <input type="number" id="input-ph" name="ph" min="3.5" max="10" step="0.1" placeholder="e.g. 6.2"
+                        required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-ph" min="3.5" max="10" step="0.1"
+                            value="6.2">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="input-rain">
+                        Rainfall (mm)
+                        <button type="button" class="info-icon" onclick="showInputInfo('rainfall')"
+                            title="About Rainfall" aria-label="Information about Rainfall">i</button>
+                    </label>
+                    <input type="number" id="input-rain" name="rainfall" min="10" max="350" step="0.1"
+                        placeholder="e.g. 100" required>
+                    <div class="input-slider-container">
+                        <input type="range" class="sync-slider" data-target="input-rain" min="10" max="350" value="100">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn btn-secondary-submit" id="btn-submit-suitability">
+                <i class="fa-solid fa-chart-simple"></i> Evaluate Crop Suitability
+            </button>
+        </form>
+    </div>
+
+    <!-- Result Panel -->
+    <div class="result-panel glass-card" id="suitability-result-card" style="display: none;">
+        <div class="card-header">
+            <h3>Suitability Analysis Report</h3>
+            <button class="action-btn-small" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+        </div>
+
+        <div class="suitability-summary">
+            <!-- Gauge Chart Column -->
+            <div class="gauge-column text-center">
+                <div class="gauge-relative">
+                    <div class="suitability-percent" id="suitability-overall-val">84.5%</div>
+                    <div class="suitability-status-label" id="suitability-overall-desc">Highly Suitable</div>
+                    <svg class="gauge-svg" viewBox="0 0 100 50">
+                        <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#222f3e" stroke-width="8"
+                            stroke-linecap="round" />
+                        <path id="gauge-fill" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#2ecc71"
+                            stroke-width="8" stroke-linecap="round" stroke-dasharray="125.6" stroke-dashoffset="30" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Radar comparison -->
+            <div class="radar-column">
+                <h4>Conditions vs Crop Ideal Profile</h4>
+                <div class="chart-container-small">
+                    <canvas id="suitabilityRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parameter list & Actionable advice -->
+        <div class="advice-section">
+            <h4>Nutrient and Environment Feedback</h4>
+            <div class="advice-list" id="suitability-advice-list">
+                <!-- Template filled by JS -->
+            </div>
+        </div>
+
+        <div class="suitability-methodology-note">
+            <p><i class="fa-solid fa-circle-info"></i> <strong>Methodology Note:</strong> The Suitability Score measures
+                the input's physiological proximity to the target crop's historical 10th-90th percentile envelope from
+                the agricultural dataset. 100% indicates optimal alignment, while values outside decay towards 0% at the
+                empirical minimum/maximum bounds. This represents environmental compatibility, not a guaranteed yield
+                forecast.</p>
+        </div>
+    </div>
+
+    <!-- Empty State Result Panel -->
+    <div class="result-panel glass-card empty-state" id="suitability-empty-state">
+        <div class="empty-state-content text-center">
+            <i class="fa-solid fa-chart-gantt empty-icon"></i>
+            <h3>No Assessment Yet</h3>
+            <p>Select a crop, fill in your agricultural metrics in the form, and click "Evaluate" to view compatibility
+                score cards and actionable guides.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Explainable Multi-Crop Comparison & Ranking Section -->
+<div class="multi-suitability-section animate-slide-up" id="multi-suitability-section" style="margin-top: 30px;">
+    <div class="glass-card full-width" style="padding: 24px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--panel-border); padding-bottom: 16px;">
+            <div>
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                    <i class="fa-solid fa-layer-group text-primary"></i> Explainable Multi-Crop Suitability Comparison
+                </h3>
+                <p class="subtitle" style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">
+                    Evaluate candidate crops side-by-side under your exact soil and climate conditions, identifying critical limiting factors and physiological bottlenecks.
+                </p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-rank-all-crops">
+                <i class="fa-solid fa-ranking-star"></i> Rank All 22 Crops Under Current Soil
+            </button>
+        </div>
+
+        <!-- Multi-Crop Results Content -->
+        <div id="multi-crop-results-container" style="display: none; margin-top: 20px;">
+            <!-- Top Ranked Table -->
+            <h4 style="margin: 0 0 10px; font-size: 14px; color: var(--text-main);"><i class="fa-solid fa-list-ol text-primary"></i> Environmental Compatibility Ranking:</h4>
+            <div class="details-table-container" style="margin-bottom: 24px;">
+                <table class="details-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Crop</th>
+                            <th>Suitability Score</th>
+                            <th>Agronomic Status</th>
+                            <th>Primary Limiting Factor</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="multi-crop-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Side-by-Side Comparison Container (When 2 crops compared) -->
+            <div id="side-by-side-comparison-box" style="display: none; background: rgba(15, 23, 42, 0.4); border-radius: var(--radius-sm); border: 1px solid var(--panel-border); padding: 18px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                    <h4 style="margin: 0; font-size: 14px; color: var(--text-main);">
+                        <i class="fa-solid fa-code-compare text-accent"></i> Detailed Parameter Compatibility: <span id="comp-crop-a-name" style="color: var(--primary);">--</span> vs <span id="comp-crop-b-name" style="color: #60a5fa;">--</span>
+                    </h4>
+                    <span class="badge" style="font-size: 11px;">Identical Soil Inputs</span>
+                </div>
+
+                <div class="details-table-container">
+                    <table class="details-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Measured Input</th>
+                                <th id="th-crop-a-head">Crop A Optimal</th>
+                                <th id="th-crop-a-status">Crop A Status</th>
+                                <th id="th-crop-b-head">Crop B Optimal</th>
+                                <th id="th-crop-b-status">Crop B Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="side-by-side-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Explainability & Bottleneck Insights -->
+            <div style="padding: 16px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--panel-border);">
+                <h5 style="margin: 0 0 8px; font-size: 13px; color: var(--text-main);"><i class="fa-solid fa-lightbulb text-warning"></i> Agronomic Limiting Factor Explanation:</h5>
+                <p id="multi-crop-explanation-text" style="font-size: 12px; color: var(--text-main); line-height: 1.5; margin: 0;">
+                    A crop's overall suitability score reflects its aggregate alignment with verified historical requirements. The primary limiting factor highlights the specific parameter furthest outside the crop's physiological envelope.
+                </p>
+            </div>
+
+            <!-- Scientific Distinction Note -->
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; line-height: 1.4;">
+                <i class="fa-solid fa-circle-info"></i> <strong>Scientific Note:</strong> Suitability scores are rule-based continuous indices computed from historical ICFA agricultural field trials. They are strictly separate from statistical machine-learning prediction probabilities and do not represent guaranteed harvest yields.
+            </p>
+        </div>
+
+        <!-- Multi-Crop Initial Call-to-Action -->
+        <div id="multi-crop-cta-box" style="padding: 24px; text-align: center; color: var(--text-muted);">
+            <i class="fa-solid fa-wheat-awn" style="font-size: 28px; color: var(--primary); margin-bottom: 10px;"></i>
+            <h4 style="margin: 0 0 6px; color: var(--text-main);">Multi-Crop Agronomic Assessment</h4>
+            <p style="margin: 0 0 14px; font-size: 13px;">Click "Rank All 22 Crops Under Current Soil" to identify which crops best align with your environmental parameters and discover their primary limiting constraints.</p>
+        </div>
+    </div>
+</div>
+<!-- Input Information Popup -->
+<div id="input-info-popup" class="input-info-popup" hidden>
+    <div class="input-info-card" role="dialog" aria-modal="true" aria-labelledby="input-info-title">
+
+        <button type="button" class="input-info-close" onclick="closeInputInfo()" aria-label="Close">&times;</button>
+
+        <h3 id="input-info-title">Input Information</h3>
+        <div id="input-info-content"></div>
+
+    </div>
+</div>
+<script>
+    function showInputInfo(type) {
+        const details = {
+            nitrogen: {
+                title: "Nitrogen (N)",
+                meaning: "Supports leaf growth and healthy plant foliage.",
+                source: "Check your soil-testing laboratory report.",
+                unit: "Use the unit expected by your trained model."
+            },
+            phosphorus: {
+                title: "Phosphorus (P)",
+                meaning: "Supports root development and energy transfer in plants.",
+                source: "Check your soil-testing laboratory report.",
+                unit: "Use the unit expected by your trained model."
+            },
+            potassium: {
+                title: "Potassium (K)",
+                meaning: "Helps regulate water balance and normal plant functions.",
+                source: "Check your soil-testing laboratory report.",
+                unit: "Use the unit expected by your trained model."
+            },
+            temperature: {
+                title: "Temperature (°C)",
+                meaning: "Temperature affects crop growth and development.",
+                source: "Check a trusted local weather source or use the live weather autofill.",
+                unit: "Degrees Celsius (°C). Allowed range: 5–50 °C."
+            },
+            humidity: {
+                title: "Humidity (%)",
+                meaning: "Describes the moisture present in the air and crop evapotranspiration rates.",
+                source: "Check your local weather report or use the live weather autofill.",
+                unit: "Percentage (%). Allowed range: 10–100%."
+            },
+                source: "Check a local weather report.",
+                unit: "Percentage (%)."
+            },
+            ph: {
+                title: "Soil pH",
+                meaning: "Indicates how acidic or alkaline your soil is.",
+                source: "Use a soil-testing report or calibrated pH meter.",
+                unit: "pH value; not mg/kg."
+            },
+            rainfall: {
+                title: "Rainfall (mm)",
+                meaning: "Rainfall availability influences crop water supply.",
+                source: "Use historical or seasonal records matching the period expected by your model.",
+                unit: "Millimetres (mm)."
+            }
+        };
+
+        const info = details[type];
+        if (!info) return;
+
+        document.getElementById("input-info-title").textContent = info.title;
+
+        const content = document.getElementById("input-info-content");
+        content.replaceChildren();
+
+        [
+            ["Why is it important?", info.meaning],
+            ["Where can I get this value?", info.source],
+            ["Unit", info.unit],
+            ["Important", "Do not guess missing measurements. Use actual soil-test data where applicable, and make sure the values and units match what your trained model expects."]
+        ].forEach(([heading, text]) => {
+            const p = document.createElement("p");
+            const strong = document.createElement("strong");
+            strong.textContent = heading + ": ";
+            p.append(strong, document.createTextNode(text));
+            content.appendChild(p);
+        });
+
+        document.getElementById("input-info-popup").hidden = false;
+    }
+
+    function closeInputInfo() {
+        document.getElementById("input-info-popup").hidden = true;
+    }
+</script>
+{% endblock %}

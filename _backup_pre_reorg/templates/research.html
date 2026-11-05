@@ -1,0 +1,445 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-title-section animate-fade-in">
+    <div class="title-with-actions">
+        <div>
+            <h2><i class="fa-solid fa-chart-column"></i> Scenario 3: Agricultural Research & ML Model Analytics</h2>
+            <p>Empirical agro-ecological evaluations, feature importances, plant pathology deep learning metrics, and real-time inference latency benchmarks.</p>
+        </div>
+        <div class="page-actions">
+            <a href="/api/export/csv" class="btn btn-primary" id="btn-export-csv">
+                <i class="fa-solid fa-file-csv"></i> Export Dataset (CSV)
+            </a>
+            <a href="/api/model-evaluation" target="_blank" class="btn btn-secondary">
+                <i class="fa-solid fa-file-code"></i> Crop Metrics (JSON)
+            </a>
+            <a href="/api/disease-evaluation" target="_blank" class="btn btn-secondary">
+                <i class="fa-solid fa-virus"></i> Disease Metrics (JSON)
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Evaluation Lab Model Switcher & Live Latency Bar -->
+<div class="glass-card animate-slide-up" style="margin-bottom: 24px; padding: 14px 18px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; border-left: 4px solid var(--primary);">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-primary btn-sm model-eval-tab-btn active" id="btn-tab-crop-model" data-model="crop" style="font-size: 12px; font-weight: 600;">
+            <i class="fa-solid fa-seedling"></i> Crop Recommendation Engine (Random Forest · 22 Crops)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm model-eval-tab-btn" id="btn-tab-disease-model" data-model="disease" style="font-size: 12px; font-weight: 600;">
+            <i class="fa-solid fa-leaf"></i> Plant Pathology Screening (MobileNetV2 · 38 Classes)
+        </button>
+    </div>
+    <div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-run-latency-benchmark" style="font-size: 11px;">
+            <i class="fa-solid fa-stopwatch"></i> Run Live Latency Benchmark
+        </button>
+    </div>
+</div>
+
+<!-- Live Latency Benchmark Results Panel (Hidden until triggered) -->
+<div id="latency-benchmark-panel" class="glass-card animate-fade-in" style="display: none; margin-bottom: 24px; padding: 18px; border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 style="margin: 0; font-size: 14px; color: #93c5fd;"><i class="fa-solid fa-gauge-high"></i> Measured Hardware Inference Latency (Live System Pass)</h4>
+        <span class="badge" id="latency-env-badge" style="background: rgba(59, 130, 246, 0.2); color: #bfdbfe;">CPU Execution Provider</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        <!-- Crop Model Latency Card -->
+        <div style="background: rgba(0,0,0,0.2); padding: 14px; border-radius: 8px; border: 1px solid var(--panel-border);">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Tabular Decision Support</div>
+            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); margin-bottom: 8px;" id="bench-crop-name">Random Forest Classifier</div>
+            <div style="display: flex; gap: 14px; align-items: baseline;">
+                <div>
+                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Mean Latency</span>
+                    <div style="font-size: 20px; font-weight: 700; color: #34d399;" id="bench-crop-mean">-- ms</div>
+                </div>
+                <div style="border-left: 1px solid var(--panel-border); padding-left: 14px;">
+                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Throughput</span>
+                    <div style="font-size: 16px; font-weight: 700; color: var(--text-main);" id="bench-crop-fps">-- FPS</div>
+                </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;" id="bench-crop-range">Min: -- ms | Max: -- ms (10 runs)</div>
+        </div>
+
+        <!-- Vision Disease Model Latency Card -->
+        <div style="background: rgba(0,0,0,0.2); padding: 14px; border-radius: 8px; border: 1px solid var(--panel-border);">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Computer Vision Screening</div>
+            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); margin-bottom: 8px;" id="bench-disease-name">MobileNetV2 (ONNX Runtime)</div>
+            <div style="display: flex; gap: 14px; align-items: baseline;">
+                <div>
+                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Mean Latency</span>
+                    <div style="font-size: 20px; font-weight: 700; color: #60a5fa;" id="bench-disease-mean">-- ms</div>
+                </div>
+                <div style="border-left: 1px solid var(--panel-border); padding-left: 14px;">
+                    <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Throughput</span>
+                    <div style="font-size: 16px; font-weight: 700; color: var(--text-main);" id="bench-disease-fps">-- FPS</div>
+                </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;" id="bench-disease-range">Min: -- ms | Max: -- ms (5 runs, 224x224 RGB)</div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= CROP RECOMMENDATION EVALUATION SECTION ================= -->
+<div id="section-crop-eval">
+    <!-- Test Set Model Evaluation Metrics Cards -->
+    <div class="eval-metrics-grid animate-slide-up" id="eval-metrics-summary">
+        <div class="stat-card">
+            <div class="stat-icon K-bg"><i class="fa-solid fa-bullseye"></i></div>
+            <div class="stat-content">
+                <h3>Test Accuracy</h3>
+                <div class="stat-value" id="val-acc">99.32%</div>
+                <p class="stat-desc">440 held-out test samples (80/20 split)</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon N-bg"><i class="fa-solid fa-scale-balanced"></i></div>
+            <div class="stat-content">
+                <h3>Weighted F1-Score</h3>
+                <div class="stat-value" id="val-f1-weighted">99.32%</div>
+                <p class="stat-desc">Harmonic mean across 22 classes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon P-bg"><i class="fa-solid fa-crosshairs"></i></div>
+            <div class="stat-content">
+                <h3>Macro Precision</h3>
+                <div class="stat-value" id="val-prec-macro">99.26%</div>
+                <p class="stat-desc">Unweighted average across 22 classes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon rain-bg"><i class="fa-solid fa-arrows-spin"></i></div>
+            <div class="stat-content">
+                <h3>Macro Recall</h3>
+                <div class="stat-value" id="val-rec-macro">99.33%</div>
+                <p class="stat-desc">Sensitivity across all crops</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="research-grid animate-slide-up">
+        <!-- Visualizations Card -->
+        <div class="analytics-card glass-card full-width">
+            <div class="card-header">
+                <h3>Machine Learning &amp; Agro-Ecological Analytics</h3>
+                <div class="chart-selector">
+                    <button class="selector-btn active" data-chart="importance">Feature Importance (RF)</button>
+                    <button class="selector-btn" data-chart="nutrients">Macronutrients (N, P, K)</button>
+                    <button class="selector-btn" data-chart="climate">Rainfall &amp; Temp</button>
+                    <button class="selector-btn" data-chart="correlation">Correlation Heatmap</button>
+                </div>
+            </div>
+            
+            <div class="chart-container-large">
+                <canvas id="researchLargeChart"></canvas>
+                <div id="heatmap-container" style="display:none; position: relative;">
+                    <div id="heatmap-grid"></div>
+                </div>
+            </div>
+
+            <div class="chart-explanation-box" id="chart-explanation">
+                <p><i class="fa-solid fa-circle-info"></i> <strong>Feature Importance:</strong> Measures Mean Decrease in Impurity (Gini importance) across 100 decision trees. Shows which variables the model relies on most during tree splits; does not imply direct physical causation.</p>
+            </div>
+        </div>
+
+        <!-- Section 6: Interactive Crop Comparison Module -->
+        <div class="comparison-card glass-card full-width">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-code-compare"></i> Empirical Crop Requirements Comparison</h3>
+                <span class="badge">Benchmark Data (2,200 records)</span>
+            </div>
+            <p class="section-intro-text">
+                Compare the physiological and ecological requirements of any two crops supported by OptiCrop. 
+                All values reflect empirical distributions from the agricultural dataset with physical measurement units.
+            </p>
+
+            <div class="comparison-selectors">
+                <div class="comparison-select-group">
+                    <label for="compare-crop-a"><i class="fa-solid fa-seedling text-primary"></i> Primary Crop (A)</label>
+                    <select id="compare-crop-a" class="styled-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="vs-circle">VS</div>
+                <div class="comparison-select-group">
+                    <label for="compare-crop-b"><i class="fa-solid fa-seedling text-accent"></i> Comparison Crop (B)</label>
+                    <select id="compare-crop-b" class="styled-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-run-comparison">
+                    <i class="fa-solid fa-arrows-left-right"></i> Compare Crops
+                </button>
+            </div>
+
+            <div class="comparison-results-grid" id="comparison-results-container" style="display: none; margin-top: 25px;">
+                <!-- Comparison Table -->
+                <div class="comparison-table-wrapper">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Unit</th>
+                                <th id="th-crop-a">Crop A</th>
+                                <th id="th-crop-b">Crop B</th>
+                                <th>Agronomic Difference</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Comparison Chart Container -->
+                <div class="comparison-chart-wrapper">
+                    <h4>Relative Requirement Envelope</h4>
+                    <div class="chart-container-medium">
+                        <canvas id="cropCompareChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison-disclaimer" id="comparison-disclaimer" style="display: none;">
+                <p><i class="fa-solid fa-book-open"></i> <strong>Data Attribution &amp; Notice:</strong> Empirical requirement data is derived from historical crop trial records in India (ICFA agro-ecological benchmarks). Published requirements are distinct from real-time model outputs and serve as baseline comparative envelopes.</p>
+            </div>
+        </div>
+
+        <!-- Verified Soil Groupings Card -->
+        <div class="policy-card glass-card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-compass"></i> Agro-Ecological Crop Clusters</h3>
+                <span class="badge">Empirical Clusters</span>
+            </div>
+            <p class="policy-intro">Crops grouped by observed environmental demands in the dataset. Useful for identifying climate-compatible crop candidates:</p>
+            
+            <div class="policy-tabs">
+                <button class="policy-tab-btn active" data-tab="drought">Drought-Resilient (Rainfall &lt; 80mm)</button>
+                <button class="policy-tab-btn" data-tab="wetland">Wetland / High Moisture (Rainfall &gt; 150mm)</button>
+                <button class="policy-tab-btn" data-tab="acidic">Acidic Soil (pH &lt; 6.0)</button>
+                <button class="policy-tab-btn" data-tab="alkaline">Alkaline Soil (pH &gt; 7.0)</button>
+            </div>
+            
+            <div class="policy-tab-content">
+                <div class="tab-pane active" id="pane-drought">
+                    <h5>Drought-Resilient Crops</h5>
+                    <p>Crops with lowest mean water demands in the dataset. Suitable for semi-arid zones or deficit-irrigation regimens:</p>
+                    <div class="crop-tags" id="tags-drought"></div>
+                    <div class="policy-note">
+                        <strong>Agronomic Note:</strong> Pulse legumes (e.g. Mothbeans, Mungbean, Chickpea) fix atmospheric nitrogen while maintaining low transpiration rates.
+                    </div>
+                </div>
+                
+                <div class="tab-pane" id="pane-wetland" style="display:none;">
+                    <h5>Wetland / High Moisture Crops</h5>
+                    <p>Crops demanding persistent root-zone moisture or heavy seasonal rainfall:</p>
+                    <div class="crop-tags" id="tags-wetland"></div>
+                    <div class="policy-note">
+                        <strong>Agronomic Note:</strong> Rice and Coconut require substantial continuous moisture; ensure adequate sub-surface drainage to prevent waterlogging when rotating.
+                    </div>
+                </div>
+                
+                <div class="tab-pane" id="pane-acidic" style="display:none;">
+                    <h5>Acidic Tolerant Cultivation</h5>
+                    <p>Crops that sustain growth in moderately acidic soils without severe micronutrient toxicity:</p>
+                    <div class="crop-tags" id="tags-acidic"></div>
+                    <div class="policy-note">
+                        <strong>Agronomic Note:</strong> When soil pH falls below 5.5, apply agricultural lime (calcium carbonate) to unlock immobilized phosphorus.
+                    </div>
+                </div>
+                
+                <div class="tab-pane" id="pane-alkaline" style="display:none;">
+                    <h5>Alkaline Tolerant Cultivation</h5>
+                    <p>Crops adapted to soils with neutral to slightly alkaline pH (&gt; 7.0):</p>
+                    <div class="crop-tags" id="tags-alkaline"></div>
+                    <div class="policy-note">
+                        <strong>Agronomic Note:</strong> Incorporate gypsum or elemental sulfur in high-pH calcareous soils to improve water infiltration and micronutrient uptake.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Research Stats / Insights summary -->
+        <div class="insights-card glass-card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-lightbulb"></i> Empirical Dataset Observations</h3>
+            </div>
+            <div class="insight-list">
+                <div class="insight-item">
+                    <div class="insight-bullet rain-bg"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
+                    <div class="insight-text">
+                        <strong>Top Feature Importance:</strong> Rainfall (22.7%) and Humidity (21.1%) have the highest feature importance in the Random Forest model, reflecting that atmospheric moisture sharply delineates crop viability.
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-bullet N-bg">N</div>
+                    <div class="insight-text">
+                        <strong>Nitrogen Variance:</strong> Leafy vegetative crops (Cotton, Coffee) demand high soil nitrogen (&gt;80 mg/kg), whereas legumes (Lentil, Chickpea) thrive at &lt;30 mg/kg due to rhizobial symbiosis.
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-bullet K-bg">K</div>
+                    <div class="insight-text">
+                        <strong>Potassium Outliers:</strong> Perennial fruit crops (Apple and Grape) require extreme soil potassium (&gt;190 mg/kg), whereas cereals demand moderate ranges (20-45 mg/kg).
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-bullet P-bg">P</div>
+                    <div class="insight-text">
+                        <strong>Balanced Confusion Matrix:</strong> All 22 crop classes achieved &gt;96% individual class recall on the 440-sample test set, confirming no majority class bias.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= PLANT DISEASE EVALUATION SECTION ================= -->
+<div id="section-disease-eval" style="display: none;">
+    <!-- Vision Model Metric Cards -->
+    <div class="eval-metrics-grid animate-slide-up">
+        <div class="stat-card">
+            <div class="stat-icon K-bg"><i class="fa-solid fa-camera"></i></div>
+            <div class="stat-content">
+                <h3>Vision Test Accuracy</h3>
+                <div class="stat-value" id="val-cv-acc">96.72%</div>
+                <p class="stat-desc">731 held-out test images</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon N-bg"><i class="fa-solid fa-scale-balanced"></i></div>
+            <div class="stat-content">
+                <h3>Macro F1-Score</h3>
+                <div class="stat-value" id="val-cv-f1">90.08%</div>
+                <p class="stat-desc">Unweighted average across 38 classes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon P-bg"><i class="fa-solid fa-bullseye"></i></div>
+            <div class="stat-content">
+                <h3>Macro Precision</h3>
+                <div class="stat-value" id="val-cv-prec">92.00%</div>
+                <p class="stat-desc">Specificity across rare &amp; common classes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon rain-bg"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <div class="stat-content">
+                <h3>Macro Recall</h3>
+                <div class="stat-value" id="val-cv-rec">89.82%</div>
+                <p class="stat-desc">Sensitivity across all 38 foliar conditions</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Critical Lab Benchmark vs Real-World Field Reality Notice -->
+    <div class="glass-card animate-slide-up" style="margin-bottom: 24px; padding: 20px; border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.05);">
+        <h4 style="margin: 0 0 8px; color: #fbbf24; font-size: 15px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Critical Scientific Distinction: Benchmark Lab Accuracy vs. Real-World Field Performance
+        </h4>
+        <div style="font-size: 13px; color: var(--text-main); line-height: 1.6;">
+            <p style="margin: 0 0 8px;">
+                The <strong>96.72% test accuracy</strong> and <strong>90.08% Macro F1</strong> reported above were evaluated on held-out test splits from the peer-reviewed <strong>PlantVillage dataset</strong>. These benchmark images were photographed under controlled laboratory staging with detached leaves against uniform, high-contrast backgrounds (solid gray/black surfaces).
+            </p>
+            <p style="margin: 0 0 8px;">
+                <strong>Real-World Field Reality:</strong> In open fields and polyhouses, foliar vision models experience significant domain shift. Variable solar angles, leaf specular glint, wet surface reflections, soil and weed background clutter, leaf curling, and simultaneous multi-pathogen co-infections (e.g., Early Blight paired with Nitrogen chlorosis or Spider Mites) substantially degrade raw convolutional activations.
+            </p>
+            <p style="margin: 0; color: #fde68a;">
+                <i class="fa-solid fa-shield-halved"></i> <strong>OptiCrop Safeguards:</strong> To prevent overconfident misdiagnoses in real production environments, OptiCrop enforces Shannon entropy gating, softmax probability margin checks, Laplacian texture variance filtering, 14-species host taxonomy compatibility, and mandatory chemical treatment withholding when uncertainty is detected.
+            </p>
+        </div>
+    </div>
+
+    <div class="research-grid animate-slide-up">
+        <!-- Model Architecture & Specifications -->
+        <div class="glass-card full-width">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-microchip"></i> Vision Architecture &amp; Training Specifications</h3>
+                <span class="badge">MobileNetV2 ONNX</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 14px;">
+                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Base Architecture</span>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-main); margin-top: 2px;">MobileNetV2 (3.5M Params)</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Inverted residual blocks with linear bottlenecks</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Pre-training &amp; Fine-tuning</span>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-main); margin-top: 2px;">ImageNet-1k → PlantVillage</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Transfer learning with AdamW optimizer</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Input Resolution</span>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-main); margin-top: 2px;">224 × 224 × 3 RGB</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">ImageNet normalization: mean=[0.485, 0.456, 0.406]</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Deployment Engine</span>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-main); margin-top: 2px;">ONNX Runtime (CPU)</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Zero PyTorch serverless footprint (~45MB bundle)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per-Class Evaluation Metrics Table -->
+        <div class="glass-card full-width">
+            <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h3 style="margin: 0;"><i class="fa-solid fa-table-list"></i> Per-Class Held-Out Evaluation (38 PlantVillage Classes)</h3>
+                    <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-muted);">Exact precision, recall, and F1-score from the 731-sample test split:</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="disease-eval-search" placeholder="Filter class or crop..." class="styled-input" style="padding: 6px 12px; font-size: 12px; width: 200px;">
+                </div>
+            </div>
+
+            <div class="comparison-table-wrapper" style="margin-top: 14px; max-height: 480px; overflow-y: auto;">
+                <table class="comparison-table" id="disease-eval-table">
+                    <thead>
+                        <tr>
+                            <th>Crop Host</th>
+                            <th>Pathology / Condition</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>Test Support</th>
+                            <th>Reliability Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="disease-eval-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Loading per-class evaluation metrics...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Known Limitations & Failure Cases -->
+        <div class="glass-card full-width" style="border-left: 4px solid #64748b;">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-bug text-muted"></i> Documented Failure Modes &amp; Pathological Limitations</h3>
+                <span class="badge">Model Limitations</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 14px; font-size: 12px; line-height: 1.6; color: var(--text-main);">
+                <div style="background: rgba(255,255,255,0.02); padding: 14px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <h5 style="margin: 0 0 6px; color: #f87171; font-size: 13px;"><i class="fa-solid fa-circle-xmark"></i> 1. Closed-Set OOD Vulnerability</h5>
+                    <p style="margin: 0;">Closed-set classifiers map all inputs to one of the 38 classes. Unseen foliar lesions—such as European Pear Rust (<em>Gymnosporangium sabinae</em>) on Pyrus foliage—cannot be recognized natively and would force a false prediction (e.g. Corn Gray Leaf Spot) without entropy and margin safeguards.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); padding: 14px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <h5 style="margin: 0 0 6px; color: #f59e0b; font-size: 13px;"><i class="fa-solid fa-circle-exclamation"></i> 2. Abiotic vs. Biotic Lesion Mimicry</h5>
+                    <p style="margin: 0;">Potassium deficiency causes marginal leaf scorch in tomatoes that visually resembles Septoria or Early Blight necrosis. Similarly, nitrogen chlorosis mimics viral yellows. Vision models cannot measure leaf tissue sap chemistry; confirmatory soil/tissue tests are essential.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); padding: 14px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <h5 style="margin: 0 0 6px; color: #60a5fa; font-size: 13px;"><i class="fa-solid fa-camera-rotate"></i> 3. Single-Leaf Staging Bias</h5>
+                    <p style="margin: 0;">The model evaluates individual detached leaves without whole-plant architecture, stem cankers, fruit symptoms, or root inspection. Whole-field scouting and local extension consultation are mandatory before executing chemical interventions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
